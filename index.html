@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Taxi Pro v62.0 - Repo Native</title>
+  <title>Taxi Pro v63.0 - Ultimate Hybrid</title>
   <style>
     :root {
       --bg: #050910; --panel: #0f172a; --accent: #22c55e; --text: #f8fafc;
@@ -15,9 +15,7 @@
     header { background: #020617; border-bottom: 2px solid var(--accent); padding: 8px; flex-shrink: 0; }
     .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
     .version { color: var(--accent); font-weight: 900; font-size: 16px; }
-    #status { font-size: 10px; padding: 3px 8px; border-radius: 4px; font-weight: bold; background: var(--line); }
-    .online { background: var(--accent); color: #000; }
-    .offline { background: var(--red); color: #fff; }
+    .json-date { font-size: 11px; color: var(--highlight); font-weight: bold; border: 1px solid var(--highlight); padding: 2px 6px; border-radius: 4px; }
     
     .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 8px; }
     .stat-box { background: var(--panel); padding: 6px; border-radius: 4px; text-align: center; border: 1px solid var(--line); }
@@ -25,36 +23,39 @@
     .stat-lab { font-size: 8px; color: var(--muted); text-transform: uppercase; }
 
     .file-controls { display: grid; grid-template-columns: 1fr 1fr 45px; gap: 6px; margin-bottom: 8px; }
-    .file-btn { position: relative; background: #1e293b; border: 1px dashed var(--muted); color: var(--muted); padding: 7px; border-radius: 4px; font-size: 9px; text-align: center; overflow: hidden; }
+    .file-btn { position: relative; background: #1e293b; border: 1px dashed var(--muted); color: var(--muted); padding: 7px; border-radius: 4px; font-size: 9px; text-align: center; overflow: hidden; cursor: pointer; }
     .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
     .search-box { width: 100%; padding: 14px; background: #000; color: #fff; border: 2px solid var(--line); border-radius: 6px; font-size: 18px; border-left: 6px solid var(--accent); margin-bottom: 8px; outline: none; }
 
     .firms-section { background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--accent); flex-shrink: 0; }
-    #firmsGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 4px; padding: 6px; max-height: 90px; overflow-y: auto; }
+    .firms-header { padding: 4px 10px; display: flex; justify-content: space-between; align-items: center; background: #0f172a; font-size: 10px; font-weight: bold; }
+    #firmsGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 4px; padding: 6px; max-height: 90px; overflow-y: auto; transition: max-height 0.3s; }
+    #firmsGrid.expanded { max-height: 350px; }
     
     .firm-card { background: #1e293b; padding: 8px; border-radius: 4px; display: flex; justify-content: space-between; border-left: 3px solid var(--accent); cursor: pointer; }
     .firm-card.active { background: var(--accent); color: #000; font-weight: bold; }
 
     .main-view { flex: 1; overflow-y: auto; padding: 8px 8px 100px; background: #000; }
-    .car-item { background: #020617; border: 1px solid var(--line); border-radius: 6px; padding: 12px; margin-bottom: 10px; border-left: 4px solid var(--accent); }
+    #resultsList { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; }
+    .car-item { background: #020617; border: 1px solid var(--line); border-radius: 6px; padding: 12px; border-left: 4px solid var(--accent); }
     .plate { display: inline-block; background: #fff; color: #000; padding: 3px 10px; border-radius: 4px; font-family: monospace; font-weight: 900; font-size: 18px; margin-bottom: 6px; }
     .drivers-box { background: #0f172a; padding: 8px; border-radius: 4px; border-left: 3px solid var(--blue); color: var(--blue); font-weight: 700; font-size: 14px; margin-top: 5px; }
 
-    footer { position: fixed; bottom: 0; left: 0; right: 0; background: #020617; border-top: 2px solid var(--accent); display: flex; justify-content: space-between; align-items: center; height: 80px; padding: 0 15px; z-index: 2000; }
-    .nav-btn { background: var(--panel); border: 1px solid var(--accent); color: #fff; width: 70px; height: 50px; border-radius: 8px; font-size: 24px; }
+    footer { position: fixed; bottom: 0; left: 0; right: 0; background: #020617; border-top: 2px solid var(--accent); display: flex; justify-content: space-between; align-items: center; height: 85px; padding: 0 15px; z-index: 2000; }
+    .nav-btn { background: var(--panel); border: 1px solid var(--accent); color: #fff; width: 75px; height: 55px; border-radius: 8px; font-size: 24px; cursor: pointer; }
   </style>
 </head>
 <body>
 
 <header>
   <div class="top-bar">
-    <div class="version">TAXI PRO v62.0</div>
-    <div id="status">ТЪРСЯ SOFIA2...</div>
+    <div class="version">TAXI PRO v63.0</div>
+    <div id="fileDate" class="json-date">REPO: ТЪРСЕНЕ...</div>
   </div>
   
   <div class="stats-row">
-    <div class="stat-box"><span id="statTotal" class="stat-val">0</span><span class="stat-lab">ОБЩО</span></div>
+    <div class="stat-box"><span id="statTotal" class="stat-val">0</span><span class="stat-lab">БАЗА</span></div>
     <div class="stat-box"><span id="statCars" class="stat-val" style="color:var(--accent)">0</span><span class="stat-lab">КОЛИ</span></div>
     <div class="stat-box"><span id="statDrivers" class="stat-val" style="color:var(--blue)">0</span><span class="stat-lab">ВОДАЧИ</span></div>
     <div class="stat-box"><span id="statFirms" class="stat-val" style="color:var(--highlight)">0</span><span class="stat-lab">ФИРМИ</span></div>
@@ -70,6 +71,10 @@
 </header>
 
 <div class="firms-section">
+  <div class="firms-header">
+    <span>ТОП ОПЕРАТОРИ</span>
+    <button onclick="document.getElementById('firmsGrid').classList.toggle('expanded')" style="background:var(--highlight); border:none; padding:2px 8px; border-radius:3px; font-weight:bold; cursor:pointer;">РАЗШИРИ ▼</button>
+  </div>
   <div id="firmsGrid"></div>
 </div>
 
@@ -89,23 +94,21 @@
 <script>
 let dbMap = new Map(), filtered = [], selectedOp = '', page = 1, pageSize = 50;
 
-// Автоматично зареждане от същото място, където е HTML файла
 window.onload = async () => {
-  const st = document.getElementById('status');
   try {
     const res = await fetch('./Sofia2.json');
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-    processData(data);
-    st.textContent = "REPO: OK";
-    st.className = "online";
-  } catch (e) {
-    st.textContent = "REPO: ЛИПСВА";
-    st.className = "offline";
-  }
+    if (res.ok) {
+      const data = await res.json();
+      processData(data);
+      document.getElementById('fileDate').textContent = "REPO: OK";
+    } else {
+      document.getElementById('fileDate').textContent = "ОФЛАЙН";
+    }
+  } catch (e) { document.getElementById('fileDate').textContent = "ОФЛАЙН"; }
 };
 
-function processData(json) {
+function processData(json, fileDate) {
+  if (fileDate) document.getElementById('fileDate').textContent = fileDate.toUpperCase();
   const items = Array.isArray(json) ? json : (json.data || json.items || []);
   items.forEach(item => {
     const op = (item.operatorName || item.operator || "ДРУГИ").trim();
@@ -142,10 +145,13 @@ function apply() {
   });
 
   const sortedOps = Object.entries(stats).sort((a,b) => b[1].cars - a[1].cars);
-  document.getElementById('firmsGrid').innerHTML = sortedOps.slice(0, 12).map(([n, s]) => `
+  document.getElementById('firmsGrid').innerHTML = sortedOps.map(([n, s]) => `
     <div class="firm-card ${selectedOp === n ? 'active' : ''}" onclick="selectedOp=(selectedOp==='${n}'?'':'${n}'); apply();">
-      <span style="font-size:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px;">${n}</span>
-      <span style="color:${selectedOp===n?'#000':'var(--accent)'}; font-weight:bold;">🚗${s.cars}</span>
+      <span style="font-size:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${n}</span>
+      <div style="font-size:12px; font-weight:bold;">
+        <span style="color:${selectedOp===n?'#000':'var(--accent)'}">🚗${s.cars}</span>
+        <span style="color:${selectedOp===n?'#000':'var(--blue)'}; margin-left:8px;">👤${s.drivers}</span>
+      </div>
     </div>
   `).join('');
 
@@ -166,8 +172,8 @@ function render() {
   document.getElementById('pageCount').textContent = `СТРАНИЦА ${page} / ${Math.ceil(filtered.length/pageSize) || 1}`;
   document.getElementById('resultsList').innerHTML = vis.map(c => `
     <div class="car-item">
-      <div class="plate">${c.reg}</div>
-      <div style="font-size:11px; color:var(--muted)">${c.op} | ${c.model}</div>
+      <div style="font-size:10px; color:var(--muted); margin-bottom:4px;">${c.op}</div>
+      <div class="plate">${c.reg}</div> <span style="color:var(--muted); font-size:14px;">${c.model}</span>
       <div class="drivers-box">👤 ${c.dList} <span style="float:right; color:var(--highlight)">[${c.dCount}]</span></div>
     </div>
   `).join('');
@@ -179,8 +185,17 @@ function changePage(d) {
   } 
 }
 
-document.getElementById('f1').onchange = async (e) => { const t = await e.target.files[0].text(); processData(JSON.parse(t)); };
-document.getElementById('f2').onchange = async (e) => { const t = await e.target.files[0].text(); processData(JSON.parse(t)); };
+async function handleManual(e, labelId) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const d = new Date(file.lastModified);
+  const dateStr = `${d.getDate()} ${d.toLocaleString('bg-BG', {month:'short'})} ${d.getFullYear()}`;
+  document.getElementById(labelId).textContent = file.name.substring(0,8);
+  processData(JSON.parse(await file.text()), dateStr);
+}
+
+document.getElementById('f1').onchange = (e) => handleManual(e, 'l1');
+document.getElementById('f2').onchange = (e) => handleManual(e, 'l2');
 document.getElementById('mainSearch').oninput = apply;
 </script>
 </body>
