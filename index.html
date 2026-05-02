@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Taxi Pro v59.0 - Stable 37.5 Fork</title>
+  <style>
+    :root {
+      --bg: #050910; --panel: #0f172a; --accent: #22c55e; --text: #f8fafc;
+      --muted: #94a3b8; --highlight: #facc15; --line: #1e293b; --blue: #3b82f6; --red: #ef4444;
+    }
+    * { box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    header { background: #020617; border-bottom: 2px solid var(--accent); padding: 8px; flex-shrink: 0; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .version { color: var(--accent); font-weight: 900; font-size: 16px; }
+    .json-date { font-size: 11px; color: #000; font-weight: bold; background: var(--highlight); padding: 2px 8px; border-radius: 4px; }
+    
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 8px; }
+    .stat-box { background: var(--panel); padding: 6px; border-radius: 4px; text-align: center; border: 1px solid var(--line); }
+    .stat-val { display: block; font-weight: 900; font-size: 14px; }
+    .stat-lab { font-size: 8px; color: var(--muted); text-transform: uppercase; }
+
+    .file-controls { display: grid; grid-template-columns: 1fr 1fr 45px; gap: 6px; margin-bottom: 8px; }
+    .file-btn { position: relative; background: #1e293b; border: 1px dashed var(--muted); color: var(--muted); padding: 7px; border-radius: 4px; font-size: 9px; text-align: center; overflow: hidden; font-weight: bold; }
+    .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+    .search-box { width: 100%; padding: 14px; background: #000; color: #fff; border: 2px solid var(--line); border-radius: 6px; font-size: 18px; border-left: 6px solid var(--accent); margin-bottom: 8px; outline: none; }
+
+    .firms-section { background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--accent); flex-shrink: 0; }
+    #firmsGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 4px; padding: 6px; max-height: 95px; overflow-y: auto; }
+    #firmsGrid.expanded { max-height: 400px; }
+    
+    .firm-card { background: #1e293b; padding: 8px 10px; border-radius: 4px; display: flex; justify-content: space-between; border-left: 3px solid var(--accent); cursor: pointer; }
+    .firm-card.active { background: var(--accent); color: #000; font-weight: bold; }
+
+    /* Динамични изгледи */
+    .view-mobile .car-item { background: #020617; border: 1px solid var(--line); border-radius: 6px; padding: 12px; margin-bottom: 10px; border-left: 4px solid var(--accent); }
+    .view-mobile .plate { display: inline-block; background: #fff; color: #000; padding: 3px 10px; border-radius: 4px; font-family: monospace; font-weight: 900; font-size: 18px; margin-bottom: 6px; }
+    .view-mobile .drivers-box { background: #0f172a; padding: 8px; border-radius: 4px; border-left: 3px solid var(--blue); color: var(--blue); font-weight: 700; font-size: 14px; margin-top: 5px; }
+
+    .view-desktop .car-item { display: grid; grid-template-columns: 110px 180px 1fr 60px; align-items: center; padding: 6px 12px; border-bottom: 1px solid var(--line); background: #000; font-size: 14px; }
+    .view-desktop .plate { font-family: monospace; font-weight: 900; color: var(--accent); font-size: 16px; }
+    .view-desktop .drivers-box { margin: 0; padding: 0; background: none; border: none; color: var(--blue); font-weight: bold; }
+    .view-desktop .car-model { color: var(--muted); font-size: 12px; }
+
+    footer { position: fixed; bottom: 0; left: 0; right: 0; background: #020617; border-top: 2px solid var(--accent); display: flex; justify-content: space-between; align-items: center; height: 85px; padding: 0 15px; z-index: 2000; }
+    .nav-btn { background: var(--panel); border: 1px solid var(--accent); color: #fff; width: 75px; height: 55px; border-radius: 8px; font-size: 24px; }
+    .view-toggle { background: var(--blue); color: white; border: none; padding: 8px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; }
+  </style>
+</head>
+<body class="view-mobile">
+
+<header>
+  <div class="top-bar">
+    <div class="version">TAXI PRO v59.0</div>
+    <div id="fileDate" class="json-date">ЗАРЕДЕТЕ JSON</div>
+  </div>
+  
+  <div class="stats-row">
+    <div class="stat-box"><span id="statTotal" class="stat-val">0</span><span class="stat-lab">БАЗА</span></div>
+    <div class="stat-box"><span id="statCars" class="stat-val" style="color:var(--accent)">0</span><span class="stat-lab">КОЛИ</span></div>
+    <div class="stat-box"><span id="statDrivers" class="stat-val" style="color:var(--blue)">0</span><span class="stat-lab">ВОДАЧИ</span></div>
+    <div class="stat-box"><span id="statFirms" class="stat-val" style="color:var(--highlight)">0</span><span class="stat-lab">ФИРМИ</span></div>
+  </div>
+
+  <div class="file-controls">
+    <div class="file-btn"><span id="l1">📁 БАЗА 1</span><input type="file" id="f1" accept=".json"></div>
+    <div class="file-btn"><span id="l2">📁 БАЗА 2</span><input type="file" id="f2" accept=".json"></div>
+    <button class="view-toggle" onclick="toggleLayout()">📱/💻</button>
+  </div>
+
+  <input type="text" id="mainSearch" class="search-box" placeholder="Търсене (напр: волт еа)...">
+</header>
+
+<div class="firms-section">
+  <div style="padding: 5px 10px; display: flex; justify-content: space-between; align-items: center;">
+    <span style="font-size: 10px; font-weight: 900; color: var(--muted);">ОПЕРАТОРИ</span>
+    <button onclick="document.getElementById('firmsGrid').classList.toggle('expanded')" style="background:var(--highlight); border:none; padding:3px 10px; border-radius:4px; font-size:9px; font-weight:900;">РАЗШИРИ ▼</button>
+  </div>
+  <div id="firmsGrid"></div>
+</div>
+
+<div class="main-view" id="scrollArea">
+  <div id="resultsList"></div>
+</div>
+
+<footer>
+  <button class="nav-btn" onclick="changePage(-1)">◄</button>
+  <div style="text-align: center;">
+    <div id="filterCount" style="font-weight:900; font-size:22px; color:#fff; font-family:monospace;">0</div>
+    <div id="pageCount" style="font-size:11px; color:var(--muted);">СТРАНИЦА 0/0</div>
+  </div>
+  <button class="nav-btn" onclick="changePage(1)">►</button>
+</footer>
+
+<script>
+let dbMap = new Map(), filtered = [], selectedOp = '', page = 1, pageSize = 50;
+
+async function processFile(e, labelId) {
+  const file = e.target.files[0];
+  if (!file) return;
+  document.getElementById(labelId).textContent = file.name.substring(0, 12);
+  
+  // Извличане на дата от метаданните на файла
+  const d = new Date(file.lastModified);
+  document.getElementById('fileDate').textContent = d.toLocaleDateString('bg-BG');
+
+  const text = await file.text();
+  const json = JSON.parse(text);
+  const items = Array.isArray(json) ? json : (json.data || []);
+
+  items.forEach(item => {
+    const op = (item.operatorName || item.operator || "ДРУГИ").trim();
+    let vehicles = item.taxiLicensesVehiclesDrivers || item.vehicles || [item];
+    
+    vehicles.forEach(vData => {
+      const v = vData.taxiLicenseVehicle || vData || {};
+      const reg = (v.registerNumber || v.regNumber || "").toUpperCase().replace(/\s+/g, '');
+      
+      if (reg.length > 4) {
+        if (!dbMap.has(reg)) {
+          dbMap.set(reg, { 
+            op, reg, 
+            model: (v.markAndModel || v.model || "—"), 
+            drivers: new Set() 
+          });
+        }
+        const dName = vData.driverName || vData.taxiLicenseDriver?.driverName;
+        if (dName && dName.length > 2) dbMap.get(reg).drivers.add(dName.trim());
+      }
+    });
+  });
+  apply();
+}
+
+function apply() {
+  const query = document.getElementById('mainSearch').value.toLowerCase();
+  const terms = query.split(' ').filter(t => t);
+  
+  const all = Array.from(dbMap.values()).map(c => {
+    const dArr = Array.from(c.drivers);
+    return { 
+      ...c, 
+      dList: dArr.length > 0 ? dArr.join(", ") : "ТИТУЛЯР", 
+      dCount: Math.max(1, dArr.length), 
+      search: `${c.op} ${c.reg} ${c.model} ${dArr.join(" ")}`.toLowerCase() 
+    };
+  });
+
+  // Търсене с няколко думи
+  let temp = all.filter(c => terms.every(t => c.search.includes(t)));
+  
+  // Статистика Фирми
+  const stats = {};
+  temp.forEach(c => {
+    if (!stats[c.op]) stats[c.op] = { cars: 0, drivers: 0 };
+    stats[c.op].cars++;
+    stats[c.op].drivers += c.dCount;
+  });
+
+  const sortedOps = Object.entries(stats).sort((a,b) => b[1].cars - a[1].cars);
+  document.getElementById('firmsGrid').innerHTML = sortedOps.map(([n, s]) => `
+    <div class="firm-card ${selectedOp === n ? 'active' : ''}" onclick="selectedOp=(selectedOp==='${n}'?'':'${n}'); apply();">
+      <span style="font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:150px;">${n}</span>
+      <div style="display:flex; gap:8px; font-family:monospace; font-size:12px;">
+        <span style="color:${selectedOp===n?'#000':'var(--accent)'}">🚗${s.cars}</span>
+        <span style="color:${selectedOp===n?'#000':'var(--blue)'}">👤${s.drivers}</span>
+      </div>
+    </div>
+  `).join('');
+
+  if (selectedOp) temp = temp.filter(c => c.op === selectedOp);
+  filtered = temp;
+
+  document.getElementById('statTotal').textContent = dbMap.size;
+  document.getElementById('statCars').textContent = filtered.length;
+  document.getElementById('statDrivers').textContent = filtered.reduce((a, b) => a + b.dCount, 0);
+  document.getElementById('statFirms').textContent = sortedOps.length;
+  document.getElementById('filterCount').textContent = filtered.length;
+
+  page = 1; render();
+}
+
+function render() {
+  const start = (page - 1) * pageSize;
+  const vis = filtered.slice(start, start + pageSize);
+  const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+  document.getElementById('pageCount').textContent = `СТРАНИЦА ${page} / ${totalPages}`;
+  
+  document.getElementById('resultsList').innerHTML = vis.map((c, i) => `
+    <div class="car-item">
+      <div class="plate">${c.reg}</div>
+      <div class="car-model">${c.op} | ${c.model}</div>
+      <div class="drivers-box">👤 ${c.dList}</div>
+      <div style="font-size:10px; color:var(--highlight); text-align:right;">[${c.dCount}]</div>
+    </div>
+  `).join('');
+}
+
+function toggleLayout() { document.body.classList.toggle('view-desktop'); document.body.classList.toggle('view-mobile'); }
+function changePage(d) { 
+    const max = Math.ceil(filtered.length/pageSize);
+    if (page+d >= 1 && page+d <= max) { 
+        page+=d; render(); document.getElementById('scrollArea').scrollTop=0; 
+    } 
+}
+
+document.getElementById('f1').onchange = (e) => processFile(e, 'l1');
+document.getElementById('f2').onchange = (e) => processFile(e, 'l2');
+document.getElementById('mainSearch').oninput = apply;
+</script>
+</body>
+</html>
