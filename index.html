@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Taxi Pro v64.0 - Compact & Repo</title>
+  <title>Taxi Pro v66.0 - Live Repo Date</title>
   <style>
     :root {
       --bg: #050910; --panel: #0f172a; --accent: #22c55e; --text: #f8fafc;
@@ -23,35 +23,35 @@
     .stat-lab { font-size: 7px; color: var(--muted); text-transform: uppercase; }
 
     .file-controls { display: grid; grid-template-columns: 1fr 1fr 45px; gap: 4px; margin-bottom: 6px; }
-    .file-btn { position: relative; background: #1e293b; border: 1px dashed var(--muted); color: var(--muted); padding: 6px; border-radius: 4px; font-size: 9px; text-align: center; overflow: hidden; }
+    .file-btn { position: relative; background: #1e293b; border: 1px dashed var(--muted); color: var(--muted); padding: 5px; border-radius: 4px; font-size: 9px; text-align: center; overflow: hidden; }
     .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
     .search-box { width: 100%; padding: 10px; background: #000; color: #fff; border: 2px solid var(--line); border-radius: 5px; font-size: 16px; border-left: 5px solid var(--accent); outline: none; margin-bottom: 4px; }
 
     .firms-section { background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--accent); flex-shrink: 0; }
     .firms-header { padding: 4px 8px; display: flex; justify-content: space-between; align-items: center; background: #0f172a; font-size: 9px; font-weight: bold; }
-    #firmsGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 3px; padding: 4px; max-height: 80px; overflow-y: auto; transition: max-height 0.3s; }
-    #firmsGrid.expanded { max-height: 380px; }
+    #firmsGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 3px; padding: 4px; max-height: 75px; overflow-y: auto; transition: max-height 0.3s; }
+    #firmsGrid.expanded { max-height: 350px; }
     
-    .firm-card { background: #1e293b; padding: 6px 10px; border-radius: 4px; display: flex; justify-content: space-between; border-left: 3px solid var(--accent); cursor: pointer; align-items: center; }
+    .firm-card { background: #1e293b; padding: 5px 10px; border-radius: 4px; display: flex; justify-content: space-between; border-left: 3px solid var(--accent); cursor: pointer; align-items: center; }
     .firm-card.active { background: var(--accent); color: #000; font-weight: bold; }
 
-    .main-view { flex: 1; overflow-y: auto; padding: 6px; background: #000; padding-bottom: 130px; }
-    #resultsList { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 6px; }
-    .car-item { background: #020617; border: 1px solid var(--line); border-radius: 5px; padding: 8px; border-left: 4px solid var(--accent); }
-    .plate { display: inline-block; background: #fff; color: #000; padding: 2px 8px; border-radius: 3px; font-family: monospace; font-weight: 900; font-size: 16px; margin-right: 6px; }
-    .drivers-box { background: #0f172a; padding: 6px; border-radius: 4px; border-left: 3px solid var(--blue); color: var(--blue); font-weight: 700; font-size: 13px; margin-top: 4px; }
+    .main-view { flex: 1; overflow-y: auto; padding: 6px; background: #000; padding-bottom: 180px; } /* Още повече място за последния ред */
+    #resultsList { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 5px; }
+    .car-item { background: #020617; border: 1px solid var(--line); border-radius: 5px; padding: 6px 10px; border-left: 4px solid var(--accent); }
+    .plate { display: inline-block; background: #fff; color: #000; padding: 1px 6px; border-radius: 3px; font-family: monospace; font-weight: 900; font-size: 15px; margin-right: 6px; }
+    .drivers-box { background: #0f172a; padding: 5px 8px; border-radius: 4px; border-left: 3px solid var(--blue); color: var(--blue); font-weight: 700; font-size: 12px; margin-top: 4px; }
 
-    footer { position: fixed; bottom: 0; left: 0; right: 0; background: #020617; border-top: 2px solid var(--accent); display: flex; justify-content: space-between; align-items: center; height: 80px; padding: 0 12px; z-index: 2000; }
-    .nav-btn { background: var(--panel); border: 1px solid var(--accent); color: #fff; width: 65px; height: 50px; border-radius: 8px; font-size: 20px; }
+    footer { position: fixed; bottom: 0; left: 0; right: 0; background: #020617; border-top: 2px solid var(--accent); display: flex; justify-content: space-between; align-items: center; height: 75px; padding: 0 15px; z-index: 2000; }
+    .nav-btn { background: var(--panel); border: 1px solid var(--accent); color: #fff; width: 60px; height: 45px; border-radius: 8px; font-size: 20px; }
   </style>
 </head>
 <body>
 
 <header>
   <div class="top-bar">
-    <div class="version">TAXI PRO v64.0</div>
-    <div id="fileDate" class="json-date">REPO: ТЪРСЕНЕ...</div>
+    <div class="version">TAXI PRO v66.0</div>
+    <div id="fileDate" class="json-date">ПРОВЕРКА...</div>
   </div>
   
   <div class="stats-row">
@@ -64,7 +64,7 @@
   <div class="file-controls">
     <div class="file-btn"><span id="l1">📁 БАЗА 1</span><input type="file" id="f1"></div>
     <div class="file-btn"><span id="l2">📁 БАЗА 2</span><input type="file" id="f2"></div>
-    <button onclick="location.reload()" style="background:var(--red); border:none; color:#fff; border-radius:4px; font-size:9px; font-weight:bold; height:24px;">RESET</button>
+    <button onclick="location.reload()" style="background:var(--red); border:none; color:#fff; border-radius:4px; font-size:9px; font-weight:bold; height:22px; cursor:pointer;">RESET</button>
   </div>
 
   <input type="text" id="mainSearch" class="search-box" placeholder="Търсене (напр: волт еа)...">
@@ -73,7 +73,7 @@
 <div class="firms-section">
   <div class="firms-header">
     <span>ОПЕРАТОРИ</span>
-    <button id="toggleBtn" onclick="toggleFirms()" style="background:var(--highlight); border:none; padding:2px 10px; border-radius:3px; font-weight:bold; cursor:pointer;">РАЗШИРИ ▼</button>
+    <button id="toggleBtn" onclick="toggleFirms()" style="background:var(--highlight); border:none; padding:2px 12px; border-radius:3px; font-weight:bold; cursor:pointer; font-size:10px;">РАЗШИРИ ▼</button>
   </div>
   <div id="firmsGrid"></div>
 </div>
@@ -85,7 +85,7 @@
 <footer>
   <button class="nav-btn" onclick="changePage(-1)">◄</button>
   <div style="text-align: center;">
-    <div id="filterCount" style="font-weight:900; font-size:20px; color:#fff; font-family:monospace;">0</div>
+    <div id="filterCount" style="font-weight:900; font-size:18px; color:#fff; font-family:monospace;">0</div>
     <div id="pageCount" style="font-size:10px; color:var(--muted);">СТРАНИЦА 1/1</div>
   </div>
   <button class="nav-btn" onclick="changePage(1)">►</button>
@@ -94,18 +94,33 @@
 <script>
 let dbMap = new Map(), filtered = [], selectedOp = '', page = 1, pageSize = 50;
 
+// Твоят потребител и име на хранилището в GitHub
+const GITHUB_REPO = "emillion-lab/TAXI"; 
+
 window.onload = async () => {
+  // 1. Опит за извличане на датата от GitHub API
+  try {
+    const apiRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/commits?path=Sofia2.json&page=1&per_page=1`);
+    if (apiRes.ok) {
+      const commitData = await apiRes.json();
+      if (commitData.length > 0) {
+        const d = new Date(commitData[0].commit.committer.date);
+        document.getElementById('fileDate').textContent = `${d.getDate()} ${d.toLocaleString('bg-BG', {month:'short'})} ${d.getFullYear()}`.toUpperCase();
+      }
+    }
+  } catch (e) { console.log("GitHub API Error"); }
+
+  // 2. Зареждане на самите данни
   try {
     const res = await fetch('./Sofia2.json');
-    if (res.ok) {
-      processData(await res.json());
-      document.getElementById('fileDate').textContent = "REPO: OK";
-    } else { document.getElementById('fileDate').textContent = "ОФЛАЙН"; }
-  } catch (e) { document.getElementById('fileDate').textContent = "ОФЛАЙН"; }
+    if (res.ok) processData(await res.json());
+    else if (document.getElementById('fileDate').textContent === "ПРОВЕРКА...") 
+      document.getElementById('fileDate').textContent = "OFFLINE";
+  } catch (e) { document.getElementById('fileDate').textContent = "OFFLINE"; }
 };
 
-function processData(json, fileDate) {
-  if (fileDate) document.getElementById('fileDate').textContent = fileDate.toUpperCase();
+function processData(json, manualDate) {
+  if (manualDate) document.getElementById('fileDate').textContent = manualDate.toUpperCase();
   const items = Array.isArray(json) ? json : (json.data || json.items || []);
   items.forEach(item => {
     const op = (item.operatorName || item.operator || "ДРУГИ").trim();
@@ -144,7 +159,7 @@ function apply() {
   const sortedOps = Object.entries(stats).sort((a,b) => b[1].cars - a[1].cars);
   document.getElementById('firmsGrid').innerHTML = sortedOps.map(([n, s]) => `
     <div class="firm-card ${selectedOp === n ? 'active' : ''}" onclick="selectedOp=(selectedOp==='${n}'?'':'${n}'); apply();">
-      <span style="font-size:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px;">${n}</span>
+      <span style="font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;">${n}</span>
       <div style="font-size:11px; font-weight:bold;">
         <span style="color:${selectedOp===n?'#000':'var(--accent)'}">🚗${s.cars}</span>
         <span style="color:${selectedOp===n?'#000':'var(--blue)'}; margin-left:6px;">👤${s.drivers}</span>
