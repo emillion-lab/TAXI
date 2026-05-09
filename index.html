@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Taxi Pro v70.0 - Deep Scan Fix</title>
+  <title>Taxi Pro v72.0 - Active vs Expired Stats</title>
   <style>
     :root {
       --bg: #050910; --panel: #0f172a; --accent: #22c55e; --text: #f8fafc;
@@ -17,32 +17,29 @@
     .version { color: var(--accent); font-weight: 900; font-size: 16px; }
     .json-date { font-size: 11px; color: var(--highlight); font-weight: bold; border: 1px solid var(--highlight); padding: 2px 6px; border-radius: 4px; }
     
-    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 8px; }
+    /* Обновена решетка за 5 брояча */
+    .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 8px; }
     .stat-box { background: var(--panel); padding: 6px; border-radius: 4px; text-align: center; border: 1px solid var(--line); }
-    .stat-val { display: block; font-weight: 900; font-size: 14px; }
-    .stat-lab { font-size: 8px; color: var(--muted); text-transform: uppercase; }
+    .stat-val { display: block; font-weight: 900; font-size: 13px; }
+    .stat-lab { font-size: 7px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
 
     .search-box { width: 100%; padding: 12px; background: #000; color: #fff; border: 2px solid var(--line); border-radius: 6px; outline: none; font-size: 16px; border-left: 5px solid var(--accent); margin-bottom: 8px; }
 
     .firms-section { background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--accent); flex-shrink: 0; }
-    .firms-header { padding: 6px 10px; font-size: 10px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; background: #0f172a; }
-    #firmsGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 4px; padding: 4px 8px 8px; max-height: 95px; overflow-y: auto; transition: max-height 0.3s; }
-    #firmsGrid.expanded { max-height: 450px; }
+    #firmsGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 4px; padding: 4px 8px; max-height: 80px; overflow-y: auto; }
     
-    .firm-card { background: #1e293b; padding: 8px 10px; border-radius: 4px; display: flex; justify-content: space-between; border-left: 3px solid var(--accent); cursor: pointer; align-items: center; }
+    .firm-card { background: #1e293b; padding: 6px; border-radius: 4px; display: flex; justify-content: space-between; border-left: 3px solid var(--accent); cursor: pointer; font-size: 10px; }
     .firm-card.active { background: var(--accent); color: #000; font-weight: bold; }
 
     .main-view { flex: 1; overflow-y: auto; background: #000; padding: 8px 8px 120px 8px; }
-    .car-item { background: #020617; border: 1px solid var(--line); border-radius: 6px; padding: 10px; margin-bottom: 10px; border-left: 4px solid var(--accent); }
+    .car-item { background: #020617; border: 1px solid var(--line); border-radius: 6px; padding: 10px; margin-bottom: 10px; position: relative; }
     .plate { display: inline-block; background: #fff; color: #000; padding: 3px 8px; border-radius: 4px; font-family: monospace; font-weight: 900; font-size: 17px; margin-right: 8px; }
     
     .validity-tag { float: right; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-    .valid { background: rgba(34, 197, 94, 0.2); color: var(--accent); border: 1px solid var(--accent); }
-    .expired { background: rgba(239, 68, 68, 0.2); color: var(--red); border: 1px solid var(--red); }
+    .tag-v { background: rgba(34, 197, 94, 0.15); color: var(--accent); border: 1px solid var(--accent); }
+    .tag-e { background: rgba(239, 68, 68, 0.15); color: var(--red); border: 1px solid var(--red); }
 
-    .drivers-box { background: #0f172a; padding: 8px; border-radius: 4px; border-left: 3px solid var(--blue); color: var(--blue); font-weight: 700; font-size: 14px; margin-top: 8px; }
-
-    footer { position: fixed; bottom: 0; left: 0; right: 0; background: #020617; border-top: 2px solid var(--accent); display: flex; justify-content: space-between; align-items: center; height: 85px; padding: 0 10px; z-index: 2000; }
+    footer { position: fixed; bottom: 0; left: 0; right: 0; background: #020617; border-top: 2px solid var(--accent); display: flex; justify-content: space-between; align-items: center; height: 85px; padding: 0 10px; z-index: 100; }
     .nav-btn { background: var(--panel); border: 1px solid var(--accent); color: #fff; width: 70px; height: 55px; border-radius: 8px; font-size: 22px; }
   </style>
 </head>
@@ -50,33 +47,27 @@
 
 <header>
   <div class="top-bar">
-    <div class="version">TAXI PRO v70.0</div>
-    <div id="fileDate" class="json-date">ИЗБЕРЕТЕ ФАЙЛ</div>
+    <div class="version">TAXI PRO v72.0</div>
+    <div id="fileDate" class="json-date">ЗАРЕДЕТЕ БАЗА</div>
   </div>
   
   <div class="stats-row">
-    <div class="stat-box"><span id="statTotal" class="stat-val">0</span><span class="stat-lab">БАЗА</span></div>
-    <div class="stat-box"><span id="statCars" class="stat-val" style="color:var(--accent)">0</span><span class="stat-lab">КОЛИ</span></div>
+    <div class="stat-box"><span id="statTotal" class="stat-val">0</span><span class="stat-lab">ОБЩО</span></div>
+    <div class="stat-box"><span id="statActive" class="stat-val" style="color:var(--accent)">0</span><span class="stat-lab">АКТИВНИ</span></div>
     <div class="stat-box"><span id="statDrivers" class="stat-val" style="color:var(--blue)">0</span><span class="stat-lab">ВОДАЧИ</span></div>
+    <div class="stat-box"><span id="statExpired" class="stat-val" style="color:var(--red)">0</span><span class="stat-lab">ИЗТЕКЛИ</span></div>
     <div class="stat-box"><span id="statFirms" class="stat-val" style="color:var(--highlight)">0</span><span class="stat-lab">ФИРМИ</span></div>
   </div>
 
-  <div style="display: grid; grid-template-columns: 1fr 1fr 60px; gap: 6px; margin-bottom: 8px;">
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
     <input type="file" id="f1" style="font-size: 10px; color: var(--muted);">
-    <input type="file" id="f2" style="font-size: 10px; color: var(--muted);">
-    <button onclick="location.reload()" style="background:var(--red); border:none; color:white; border-radius:4px; font-size:10px; font-weight:bold;">RESET</button>
+    <button onclick="location.reload()" style="background:var(--red); border:none; color:white; border-radius:4px; font-weight:bold; height: 30px;">ИЗЧИСТИ</button>
   </div>
 
-  <input type="text" id="mainSearch" class="search-box" placeholder="Търсене...">
+  <input type="text" id="mainSearch" class="search-box" placeholder="Търсене по номер, фирма или име...">
 </header>
 
-<div class="firms-section">
-  <div class="firms-header">
-    <span>ОПЕРАТОРИ</span>
-    <button id="toggleBtn" onclick="toggleFirms()" style="background:var(--highlight); border:none; padding:4px 12px; border-radius:4px; font-weight:900; font-size:10px;">РАЗШИРИ ▼</button>
-  </div>
-  <div id="firmsGrid"></div>
-</div>
+<div id="firmsGrid" class="firms-section"></div>
 
 <div class="main-view" id="scrollArea">
   <div id="resultsList"></div>
@@ -85,7 +76,7 @@
 <footer>
   <button class="nav-btn" onclick="changePage(-1)">◄</button>
   <div style="text-align: center;">
-    <div id="filterCount" style="font-weight:900; font-size:20px; color:#fff; font-family:monospace;">0</div>
+    <div id="filterCount" style="font-weight:900; font-size:20px; color:#fff;">0</div>
     <div id="pageCount" style="font-size:12px; color:var(--muted);">СТРАНИЦА 1/1</div>
   </div>
   <button class="nav-btn" onclick="changePage(1)">►</button>
@@ -95,56 +86,31 @@
 let dbMap = new Map(), filtered = [], selectedOp = '', page = 1, pageSize = 50;
 const today = new Date();
 
-function formatDate(iso) {
-    if (!iso || iso.startsWith("2000")) return "—";
-    return iso.split('T')[0].split('-').reverse().join('.');
-}
-
 async function processFile(e) {
   const file = e.target.files[0];
   if (!file) return;
-  const d = new Date(file.lastModified);
-  document.getElementById('fileDate').textContent = `${d.getDate()} ${d.toLocaleString('bg-BG', {month:'short'})} ${d.getFullYear()}`.toUpperCase();
-  
   const json = JSON.parse(await file.text());
   const items = Array.isArray(json) ? json : (json.data || json.items || []);
 
   items.forEach(item => {
     const op = (item.operatorName || item.operator || "ДРУГИ").trim();
-    // Дълбоко търсене в структурата на обекта
     const vList = item.taxiLicensesVehiclesDrivers || item.vehicles || [item];
     
     vList.forEach(vData => {
       const v = vData.taxiLicenseVehicle || vData || {};
       const reg = (v.registerNumber || v.regNumber || "").toUpperCase().replace(/\s+/g, '');
       
-      // ПОПРАВКА: Търсим най-късната дата във всички вложени нива
-      let bestDate = new Date("2000-01-01");
-      const findDate = (obj) => {
-          if (!obj || typeof obj !== 'object') return;
-          if (obj.validTo) {
-              const d = new Date(obj.validTo);
-              if (d > bestDate) bestDate = d;
-          }
-          Object.values(obj).forEach(val => {
-              if (Array.isArray(val)) val.forEach(findDate);
-              else if (typeof val === 'object') findDate(val);
-          });
+      let maxDate = new Date("2000-01-01");
+      const deepDate = (obj) => {
+        if (!obj || typeof obj !== 'object') return;
+        if (obj.validTo) { const d = new Date(obj.validTo); if (d > maxDate) maxDate = d; }
+        Object.values(obj).forEach(val => { if (typeof val === 'object') deepDate(val); });
       };
-      findDate(vData);
-      if (item.validTo && new Date(item.validTo) > bestDate) bestDate = new Date(item.validTo);
+      deepDate(vData);
 
       if (reg.length > 4) {
-        if (!dbMap.has(reg)) {
-          dbMap.set(reg, { 
-            op, reg, model: (v.markAndModel || "—"), 
-            validTo: bestDate,
-            drivers: new Set() 
-          });
-        } else {
-          if (bestDate > dbMap.get(reg).validTo) {
-            dbMap.get(reg).validTo = bestDate;
-          }
+        if (!dbMap.has(reg) || maxDate > dbMap.get(reg).validTo) {
+          dbMap.set(reg, { op, reg, model: (v.markAndModel || "—"), validTo: maxDate, drivers: new Set() });
         }
         const dName = vData.driverName || vData.taxiLicenseDriver?.driverName;
         if (dName) dbMap.get(reg).drivers.add(dName.trim());
@@ -157,79 +123,63 @@ async function processFile(e) {
 function apply() {
   const query = document.getElementById('mainSearch').value.toLowerCase();
   const terms = query.split(' ').filter(t => t);
-  const all = Array.from(dbMap.values()).map(c => {
-    const dArr = Array.from(c.drivers);
-    return { ...c, dList: dArr.length > 0 ? dArr.join(", ") : "ТИТУЛЯР", dCount: Math.max(1, dArr.length), 
-             search: `${c.op} ${c.reg} ${c.model} ${dArr.join(" ")}`.toLowerCase() };
-  });
+  const all = Array.from(dbMap.values());
 
-  let temp = all.filter(c => terms.every(t => c.search.includes(t)));
+  // Статистика
+  const activeCars = all.filter(c => c.validTo >= today);
+  const expiredCars = all.filter(c => c.validTo < today);
+  
   const stats = {};
-  temp.forEach(c => {
-    if (!stats[c.op]) stats[c.op] = { cars: 0, drivers: 0 };
-    stats[c.op].cars++; stats[c.op].drivers += c.dCount;
+  activeCars.forEach(c => {
+    if (!stats[c.op]) stats[c.op] = { active: 0, drivers: 0 };
+    stats[c.op].active++;
+    stats[c.op].drivers += Math.max(1, c.drivers.size);
   });
 
-  const sortedOps = Object.entries(stats).sort((a,b) => b[1].cars - a[1].cars);
-  document.getElementById('firmsGrid').innerHTML = sortedOps.map(([n, s]) => {
-    const safeName = n.replace(/'/g, "\\'");
-    return `
-      <div class="firm-card ${selectedOp === n ? 'active' : ''}" onclick="selectedOp=(selectedOp==='${safeName}'?'':'${safeName}'); apply();">
-        <span style="font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;">${n}</span>
-        <div style="font-family:monospace; font-weight:bold;">
-          <span style="color:${selectedOp===n?'#000':'var(--accent)'}">🚗${s.cars}</span>
-          <span style="color:${selectedOp===n?'#000':'var(--blue)'}; margin-left:8px;">👤${s.drivers}</span>
-        </div>
-      </div>
-    `;
-  }).join('');
+  const sortedOps = Object.entries(stats).sort((a,b) => b[1].active - a[1].active);
+  document.getElementById('firmsGrid').innerHTML = sortedOps.map(([n, s]) => `
+    <div class="firm-card ${selectedOp === n ? 'active' : ''}" onclick="selectedOp=(selectedOp==='${n.replace(/'/g, "\\'")} '?'':'${n.replace(/'/g, "\\'")}'); apply();">
+      <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:80px;">${n}</span>
+      <span style="color:${selectedOp===n?'#000':'var(--accent)'}">🚗${s.active}</span>
+    </div>`).join('');
 
+  // Филтриране на списъка
+  let temp = all.filter(c => terms.every(t => `${c.op} ${c.reg} ${c.model} ${Array.from(c.drivers).join(" ")}`.toLowerCase().includes(t)));
   if (selectedOp) temp = temp.filter(c => c.op === selectedOp);
   filtered = temp;
 
+  // Обновяване на броячите в хедъра
   document.getElementById('statTotal').textContent = dbMap.size;
-  document.getElementById('statCars').textContent = filtered.length;
-  document.getElementById('statDrivers').textContent = filtered.reduce((a, b) => a + b.dCount, 0);
+  document.getElementById('statActive').textContent = activeCars.length;
+  document.getElementById('statDrivers').textContent = activeCars.reduce((a, b) => a + Math.max(1, b.drivers.size), 0);
+  document.getElementById('statExpired').textContent = expiredCars.length;
   document.getElementById('statFirms').textContent = sortedOps.length;
   document.getElementById('filterCount').textContent = filtered.length;
+  
   page = 1; render();
 }
 
 function render() {
-  const start = (page - 1) * pageSize;
-  const vis = filtered.slice(start, start + pageSize);
+  const vis = filtered.slice((page-1)*pageSize, page*pageSize);
   document.getElementById('pageCount').textContent = `СТРАНИЦА ${page} / ${Math.ceil(filtered.length/pageSize) || 1}`;
-  document.getElementById('resultsList').innerHTML = vis.map((c, i) => {
-    const isExpired = c.validTo < today;
-    const dateStr = formatDate(c.validTo.toISOString());
+  document.getElementById('resultsList').innerHTML = vis.map(c => {
+    const isExp = c.validTo < today;
     return `
-      <div class="car-item">
-        <div style="font-size:10px; color:var(--muted); margin-bottom:4px;">#${start + i + 1} | ${c.op}</div>
-        <div class="validity-tag ${isExpired ? 'expired' : 'valid'}">
-            ${isExpired ? '🚫 ИЗТЕКЪЛ: ' : '✅ ВАЛИДЕН: '} ${dateStr}
-        </div>
+      <div class="car-item" style="border-left: 4px solid ${isExp ? 'var(--red)' : 'var(--accent)'}">
+        <div class="validity-tag ${isExp ? 'tag-e' : 'tag-v'}">${isExp ? '🚫' : '✅'} ${c.validTo.toLocaleDateString('bg-BG')}</div>
+        <div style="font-size:10px; color:var(--muted); margin-bottom:4px;">${c.op}</div>
         <div><span class="plate">${c.reg}</span> <span style="color:var(--muted)">${c.model}</span></div>
-        <div class="drivers-box">👤 ${c.dList} <span style="float:right; color:var(--highlight)">[${c.dCount}]</span></div>
-      </div>
-    `;
+        <div style="color:var(--blue); font-weight:bold; margin-top:6px; font-size:14px;">👤 ${Array.from(c.drivers).join(", ") || 'ТИТУЛЯР'}</div>
+      </div>`;
   }).join('');
 }
 
-function toggleFirms() {
-  const grid = document.getElementById('firmsGrid');
-  const btn = document.getElementById('toggleBtn');
-  grid.classList.toggle('expanded');
-  btn.textContent = grid.classList.contains('expanded') ? "СВИЙ ▲" : "РАЗШИРИ ▼";
-}
-
 function changePage(d) { 
-  if (page+d >= 1 && page+d <= Math.ceil(filtered.length/pageSize)) { 
-    page+=d; render(); document.getElementById('scrollArea').scrollTop=0; 
-  } 
+  const max = Math.ceil(filtered.length/pageSize);
+  if (page+d >= 1 && page+d <= max) { page += d; render(); document.getElementById('scrollArea').scrollTop = 0; }
 }
 
 document.getElementById('f1').onchange = processFile;
-document.getElementById('f2').onchange = processFile;
 document.getElementById('mainSearch').oninput = apply;
 </script>
 </body>
