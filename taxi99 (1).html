@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Taxi Pro v99 - Validity + Firms Stats</title>
+  <style>
+    :root {
+      --bg:#050910; --panel:#0f172a; --accent:#22c55e; --text:#f8fafc;
+      --muted:#94a3b8; --highlight:#facc15; --line:#1e293b; --blue:#3b82f6; --red:#ef4444;
+    }
+    *{box-sizing:border-box;font-family:'Segoe UI',Roboto,sans-serif}
+    body{margin:0;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+    header{background:#020617;border-bottom:2px solid var(--accent);padding:8px;flex-shrink:0}
+    .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+    .version{color:var(--accent);font-weight:900;font-size:16px}
+    .json-date{font-size:12px;color:var(--highlight);font-weight:900;border:2px solid var(--highlight);padding:4px 8px;border-radius:6px}
+
+    .stats-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px}
+    .stat-item{background:var(--panel);padding:10px 2px;border-radius:8px;text-align:center;border:1px solid var(--line);cursor:pointer;user-select:none}
+    .stat-item.active{border-color:var(--highlight);box-shadow:0 0 0 1px rgba(250,204,21,.35) inset}
+    .stat-val{display:block;font-weight:900;font-size:18px}
+    .stat-lab{font-size:10px;color:var(--muted);text-transform:uppercase;margin-top:2px;letter-spacing:.5px}
+
+    .file-row{display:grid;grid-template-columns:1fr 1fr 80px;gap:10px;margin-bottom:10px}
+    .file-btn{background:#1e293b;border:2px dashed rgba(148,163,184,.6);border-radius:10px;height:50px;position:relative;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;cursor:pointer}
+    .file-btn input{position:absolute;opacity:0;width:100%;height:100%;cursor:pointer}
+    .file-btn.loaded{border:2px solid var(--accent);color:var(--accent);border-style:solid}
+
+    /* Firms – ONE ROW each (single column) */
+    .firms-box{background:rgba(15,23,42,.95);border-bottom:2px solid rgba(34,197,94,.35);flex-shrink:0}
+    .firms-header{display:flex;justify-content:space-between;align-items:center;padding:4px 8px 0 8px}
+    .firms-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+    .firms-toggle{background:none;border:1px solid rgba(148,163,184,.4);color:var(--muted);border-radius:6px;font-size:11px;padding:2px 8px;cursor:pointer;font-weight:700}
+    .firms-toggle:hover{border-color:var(--accent);color:var(--accent)}
+    #firmsGrid{max-height:150px;overflow-y:auto;display:grid;grid-template-columns:1fr;gap:5px;padding:6px 8px 8px 8px;transition:max-height .25s ease,padding .25s ease}
+    #firmsGrid.expanded{max-height:55vh}
+    #firmsGrid.collapsed{max-height:0;padding-top:0;padding-bottom:0;overflow:hidden}
+    .firm-tag{
+      background:#050910;padding:7px 10px;border-radius:10px;font-size:13px;
+      display:flex;justify-content:space-between;align-items:center;cursor:pointer;
+      border-left:5px solid var(--accent); gap:10px;
+    }
+    .firm-tag.selected{background:var(--accent);color:#000;font-weight:900}
+    .firm-name{
+      flex:1; min-width:0;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      font-weight:900;
+    }
+    .firm-metrics{
+      display:flex; gap:8px; font-family:monospace; font-weight:900; flex-shrink:0; font-size:12px;
+    }
+    .mCars{color:var(--accent)}
+    .mDrv{color:var(--blue)}
+    .mNew{color:var(--highlight)}
+    .mExp{color:var(--red)}
+    .firm-tag.selected .mCars,
+    .firm-tag.selected .mDrv,
+    .firm-tag.selected .mNew,
+    .firm-tag.selected .mExp { color:#000; }
+
+    .search-box{
+      width:calc(100% - 16px);padding:14px;background:#000;color:#fff;border:2px solid var(--line);
+      border-radius:14px;font-size:18px;margin:10px 8px;border-left:6px solid var(--accent);outline:none
+    }
+
+    #listContent{flex:1;overflow-y:auto;padding:0 8px 90px 8px;background:#000}
+    .car-card{background:#020617;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:7px;position:relative}
+    .plate{display:inline-block;background:#fff;color:#000;padding:1px 8px;border-radius:5px;font-family:monospace;font-weight:900;font-size:22px}
+    .v-tag{float:right;padding:4px 8px;border-radius:8px;font-size:13px;font-weight:900;border:2px solid}
+    .v-ok{color:var(--accent);border-color:var(--accent);background:rgba(34,197,94,0.12)}
+    .v-err{color:var(--red);border-color:var(--red);background:rgba(239,68,68,0.12)}
+    .drivers{color:var(--blue);font-size:16px;font-weight:900;margin-top:8px}
+
+    footer{position:fixed;bottom:0;left:0;right:0;background:#020617;border-top:2px solid var(--accent);
+      display:flex;justify-content:space-between;align-items:center;height:85px;padding:0 14px;z-index:2000}
+    .nav-btn{background:var(--panel);border:2px solid rgba(34,197,94,.6);color:#fff;width:90px;height:60px;border-radius:18px;font-size:30px}
+    .mid{text-align:center}
+    #curCount{font-weight:900;font-size:34px;font-family:monospace}
+    #pgInfo{font-size:14px;color:var(--muted)}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="top-bar">
+    <div class="version">TAXI PRO v99</div>
+    <div id="jsonDate" class="json-date">---</div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-item active" id="fAll"><span id="sAll" class="stat-val">0</span><span class="stat-lab">ОБЩО</span></div>
+    <div class="stat-item" id="fAct"><span id="sAct" class="stat-val" style="color:var(--accent)">0</span><span class="stat-lab">АКТИВНИ</span></div>
+    <div class="stat-item" id="fExp"><span id="sExp" class="stat-val" style="color:var(--red)">0</span><span class="stat-lab">ИЗТЕКЛИ</span></div>
+    <div class="stat-item" id="fNew"><span id="sNew" class="stat-val" style="color:var(--highlight)">0</span><span class="stat-lab">НОВИ</span></div>
+    <div class="stat-item" id="fGone"><span id="sGone" class="stat-val" style="color:#f97316">0</span><span class="stat-lab">ТРЪГНАЛИ</span></div>
+  </div>
+
+  <div class="file-row">
+    <label class="file-btn" id="l1">БАЗА 1 <input type="file" accept=".json" id="file1"></label>
+    <label class="file-btn" id="l2">БАЗА 2 <input type="file" accept=".json" id="file2"></label>
+    <button onclick="location.reload()" style="background:var(--red);border:none;color:#fff;border-radius:12px;font-weight:900;font-size:16px;">RESET</button>
+  </div>
+</header>
+
+<div class="firms-box">
+  <div class="firms-header">
+    <span class="firms-title">ТОП ФИРМИ</span>
+    <button class="firms-toggle" id="firmsToggle" onclick="toggleFirms()">▲ СКРИЙ</button>
+  </div>
+  <div id="firmsGrid"></div>
+</div>
+<input type="text" id="search" class="search-box" placeholder="Търсене (рег. №, фирма, водач)…">
+<div id="listContent"></div>
+
+<footer>
+  <button class="nav-btn" id="prevBtn">◄</button>
+  <div class="mid">
+    <div id="curCount">0</div>
+    <div id="pgInfo">1 / 1</div>
+  </div>
+  <button class="nav-btn" id="nextBtn">►</button>
+</footer>
+
+<script>
+/* =========================
+   STATE
+========================= */
+let raw = new Map();        // reg -> {reg, op, model, validTo:Date(end-of-day), drivers:Set, isNew:boolean, isGone:boolean}
+let oldKeys = new Set();    // regs from база 1
+let newKeys = new Set();    // regs from база 2
+let base2Loaded = false;
+let filtered = [];
+let page = 1;
+const pageSize = 50;
+
+let fMode = 'all';          // all | active | expired | gone
+let selOp = '';             // selected operator
+
+// compare vs "today start" to avoid time-of-day noise
+const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+
+/* =========================
+   HELPERS
+========================= */
+function normReg(s){
+  return (s || '').toString().toUpperCase().replace(/\s+/g,'').trim();
+}
+function safeText(s){
+  return (s ?? '').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'<','>':'>','"':'&quot;',"'":'&#39;'}[m]));
+}
+function formatFileDate(d){
+  // "2.5.2026 г." (as you requested)
+  const dd = d.getDate();
+  const mm = d.getMonth()+1;
+  const yy = d.getFullYear();
+  return `${dd}.${mm}.${yy} г.`;
+}
+function parseValidTo(value){
+  // KEY FIX: treat date as end-of-day LOCAL to avoid timezone shifting
+  if(!value) return new Date(2000,0,1,0,0,0,0);
+
+  if(typeof value === 'string'){
+    const m = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(m){
+      const y = +m[1], mo = +m[2]-1, da = +m[3];
+      return new Date(y, mo, da, 23, 59, 59, 999);
+    }
+  }
+  const dt = new Date(value);
+  if(isNaN(dt.getTime())) return new Date(2000,0,1,0,0,0,0);
+  return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 23, 59, 59, 999);
+}
+function isActive(validTo){
+  return validTo >= todayStart;
+}
+
+/* =========================
+   EXTRACT ENTRIES (supports v68 + v94 shapes)
+========================= */
+function extractEntries(item){
+  const out = [];
+  const op = (item.operatorName || item.operator || item.operatorTitle || "ДРУГИ").toString().trim() || "ДРУГИ";
+
+  const vList = item.taxiLicensesVehiclesDrivers || item.vehicles || item.items || null;
+  if (Array.isArray(vList)) {
+    vList.forEach(vData => {
+      const v = vData.taxiLicenseVehicle || vData.vehicle || vData || {};
+      const reg = normReg(v.registerNumber || v.regNumber);
+      if(!reg) return;
+      const model = (v.markAndModel || v.model || "—").toString().trim() || "—";
+      const validTo = parseValidTo(vData.validTo || vData.taxiLicense?.validTo || item.taxiLicense?.validTo || item.validTo);
+      const driver = (vData.driverName || vData.taxiLicenseDriver?.driverName || item.driverName || "ТИТУЛЯР").toString().trim() || "ТИТУЛЯР";
+      out.push({ reg, op, model, validTo, driver });
+    });
+    return out;
+  }
+
+  const veh = item.taxiLicenseVehicle || item.vehicle || null;
+  if(veh && (veh.registerNumber || veh.regNumber)){
+    const reg = normReg(veh.registerNumber || veh.regNumber);
+    if(!reg) return out;
+    const model = (veh.markAndModel || veh.model || "—").toString().trim() || "—";
+    const lic = item.taxiLicense || item.license || null;
+    const validTo = parseValidTo(lic?.validTo || lic?.validToDate || item.validTo);
+    const driver = (item.driverName || item.taxiLicenseDriver?.driverName || "ТИТУЛЯР").toString().trim() || "ТИТУЛЯР";
+    out.push({ reg, op, model, validTo, driver });
+  }
+  return out;
+}
+
+/* =========================
+   LOAD FILES + DATE FROM FILE SLOT 2
+========================= */
+async function loadFile(file, slot){
+  if(!file) return;
+  document.getElementById('l'+slot).classList.add('loaded');
+
+  // Date requirement: show file date from BASE 2 if present
+  const d = new Date(file.lastModified);
+  if(!isNaN(d.getTime())){
+    if(slot === 2){
+      document.getElementById('jsonDate').textContent = formatFileDate(d);
+    } else {
+      // only set from base1 if base2 not loaded yet
+      if(!document.getElementById('l2').classList.contains('loaded')){
+        document.getElementById('jsonDate').textContent = formatFileDate(d);
+      }
+    }
+  }
+
+  const json = JSON.parse(await file.text());
+  processJson(json, slot);
+}
+
+function processJson(json, slot){
+  const list = Array.isArray(json) ? json : (json.data || json.items || []);
+  if(slot === 1){
+    raw.clear();
+    oldKeys.clear();
+    newKeys.clear();
+    base2Loaded = false;
+  }
+
+  list.forEach(item => {
+    const entries = extractEntries(item);
+    entries.forEach(e => {
+      if(!e.reg) return;
+
+      if(slot === 1){
+        oldKeys.add(e.reg);
+        if(!raw.has(e.reg)){
+          raw.set(e.reg, {
+            reg: e.reg,
+            op: e.op,
+            model: e.model,
+            validTo: e.validTo,
+            drivers: new Set([e.driver]),
+            isNew: false,
+            isGone: false
+          });
+        } else {
+          // FIX: merge multiple records for same reg — take latest validTo
+          const ex = raw.get(e.reg);
+          ex.drivers.add(e.driver);
+          if(e.validTo > ex.validTo) ex.validTo = e.validTo;
+          if(!ex.op || ex.op === "ДРУГИ") ex.op = e.op;
+          if(!ex.model || ex.model === "—") ex.model = e.model;
+        }
+      } else {
+        // slot === 2
+        base2Loaded = true;
+        const isNewFlag = oldKeys.size ? !oldKeys.has(e.reg) : false;
+        newKeys.add(e.reg);
+
+        if(!raw.has(e.reg)){
+          raw.set(e.reg, {
+            reg: e.reg,
+            op: e.op,
+            model: e.model,
+            validTo: e.validTo,
+            drivers: new Set([e.driver]),
+            isNew: isNewFlag,
+            isGone: false
+          });
+        } else {
+          const ex = raw.get(e.reg);
+          ex.drivers.add(e.driver);
+
+          // choose latest validTo
+          if(e.validTo > ex.validTo) ex.validTo = e.validTo;
+
+          // keep nicer op/model if old was placeholder
+          if(!ex.op || ex.op === "ДРУГИ") ex.op = e.op;
+          if(!ex.model || ex.model === "—") ex.model = e.model;
+
+          if(isNewFlag) ex.isNew = true;
+          ex.isGone = false; // present in slot 2 → not gone
+        }
+      }
+    });
+  });
+
+  // After loading slot 2: mark gone cars (in old but not in new)
+  if(slot === 2 && oldKeys.size){
+    oldKeys.forEach(reg => {
+      if(!newKeys.has(reg) && raw.has(reg)){
+        raw.get(reg).isGone = true;
+      }
+    });
+  }
+
+  apply();
+}
+
+/* =========================
+   FILTER MODE
+========================= */
+function setMode(m){
+  fMode = m;
+  document.querySelectorAll('.stat-item').forEach(x => x.classList.remove('active'));
+  if(m === 'all')     document.getElementById('fAll').classList.add('active');
+  if(m === 'active')  document.getElementById('fAct').classList.add('active');
+  if(m === 'expired') document.getElementById('fExp').classList.add('active');
+  if(m === 'new')     document.getElementById('fNew').classList.add('active');
+  if(m === 'gone')    document.getElementById('fGone').classList.add('active');
+  selOp = ''; // reset firm selection on mode change
+  apply();
+}
+
+/* =========================
+   FIRMS GRID — metrics reflect current mode scope
+   cars = count in current scope
+   drivers = drivers in scope
+   new/gone = highlighted if relevant to mode
+========================= */
+function rebuildFirms(carsInScope){
+  const map = {}; // op -> {cars, drivers, new, gone}
+  carsInScope.forEach(c => {
+    const op = c.op || "ДРУГИ";
+    if(!map[op]) map[op] = { cars:0, drivers:0, new:0, gone:0 };
+    map[op].cars++;
+    map[op].drivers += c.drivers.size;
+    if(c.isNew)  map[op].new++;
+    if(c.isGone) map[op].gone++;
+  });
+
+  const sorted = Object.entries(map).sort((a,b) => b[1].cars - a[1].cars).slice(0,20);
+
+  const grid = document.getElementById('firmsGrid');
+  grid.innerHTML = sorted.map(([name, s]) => `
+    <div class="firm-tag ${selOp===name?'selected':''}" data-op="${safeText(name)}">
+      <div class="firm-name">${safeText(name)}</div>
+      <div class="firm-metrics">
+        <span class="mCars">🚕${s.cars}</span>
+        <span class="mDrv">👤${s.drivers}</span>
+        ${s.new  ? `<span class="mNew">★${s.new}</span>` : ''}
+        ${s.gone ? `<span class="mExp">↩${s.gone}</span>` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('.firm-tag').forEach(el => {
+    el.addEventListener('click', () => {
+      const op = el.getAttribute('data-op') || '';
+      selOp = (selOp === op) ? '' : op;
+      apply();
+    });
+  });
+}
+
+/* =========================
+   APPLY (search + mode + firms + selected op)
+========================= */
+function apply(){
+  const q = (document.getElementById('search').value || '').toLowerCase().trim();
+  const all = Array.from(raw.values());
+
+  // overall stats (always from full dataset, unfiltered)
+  const actAll  = all.filter(c => isActive(c.validTo) && !c.isGone).length;
+  const expAll  = all.filter(c => !isActive(c.validTo) && !c.isGone).length;
+  const newAll  = all.filter(c => c.isNew).length;
+  const goneAll = all.filter(c => c.isGone).length;
+  const drvAll  = all.reduce((sum, c) => sum + c.drivers.size, 0);
+
+  document.getElementById('sAll').textContent  = raw.size - goneAll; // total visible (non-gone) unless in gone mode
+  document.getElementById('sAct').textContent  = actAll;
+  document.getElementById('sExp').textContent  = expAll;
+  document.getElementById('sNew').textContent  = newAll;
+  document.getElementById('sGone').textContent = goneAll;
+
+  // Only show НОВИ/ТРЪГНАЛИ buttons when база 2 is loaded
+  document.getElementById('fNew').style.opacity  = base2Loaded ? '1' : '0.35';
+  document.getElementById('fGone').style.opacity = base2Loaded ? '1' : '0.35';
+
+  // search filter
+  const base = all.filter(c => {
+    if(!q) return true;
+    const blob = (c.reg + ' ' + c.op + ' ' + c.model + ' ' + Array.from(c.drivers).join(' ')).toLowerCase();
+    return blob.includes(q);
+  });
+
+  // mode filter BEFORE firm selection
+  const inMode = base.filter(c => {
+    if(fMode === 'active')  return isActive(c.validTo) && !c.isGone;
+    if(fMode === 'expired') return !isActive(c.validTo) && !c.isGone;
+    if(fMode === 'new')     return c.isNew;
+    if(fMode === 'gone')    return c.isGone;
+    // 'all' — exclude gone unless specifically in gone mode
+    return !c.isGone;
+  });
+
+  // firms reflect current mode+search
+  rebuildFirms(inMode);
+
+  // selected firm filter
+  filtered = selOp ? inMode.filter(c => c.op === selOp) : inMode;
+
+  document.getElementById('curCount').textContent = filtered.length;
+
+  page = 1;
+  render();
+}
+
+/* =========================
+   RENDER LIST + PAGINATION
+========================= */
+function render(){
+  const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+  if(page > totalPages) page = totalPages;
+
+  const start = (page-1) * pageSize;
+  const slice = filtered.slice(start, start + pageSize);
+
+  document.getElementById('pgInfo').textContent = `${page} / ${totalPages}`;
+
+  document.getElementById('listContent').innerHTML = slice.map((c, i) => {
+    const act = isActive(c.validTo);
+    const border = c.isGone ? '#f97316' : (c.isNew ? 'var(--highlight)' : (act ? 'var(--accent)' : 'var(--red)'));
+    const tagClass = act ? 'v-ok' : 'v-err';
+    const tagText = act ? 'ВАЛИДЕН ДО' : 'ИЗТЕКЪЛ НА';
+    const dList = Array.from(c.drivers).join(', ') || '—';
+
+    return `
+      <div class="car-card" style="border-left:8px solid ${border}">
+        <div class="v-tag ${tagClass}">${tagText} ${c.validTo.toLocaleDateString('bg-BG')}</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:900;">#${start+i+1} | ${safeText(c.op)}</div>
+        <div style="margin-bottom:6px;">
+          <span class="plate">${safeText(c.reg)}</span>
+          <span style="font-size:16px;margin-left:10px;color:var(--muted);font-weight:900;">${safeText(c.model)}</span>
+          ${c.isNew  ? `<span style="margin-left:10px;color:var(--highlight);font-weight:900;font-size:14px;">★ НОВ</span>` : ''}
+          ${c.isGone ? `<span style="margin-left:10px;color:#f97316;font-weight:900;font-size:14px;">↩ ТРЪГНАЛ</span>` : ''}
+        </div>
+        <div class="drivers">👤 ${safeText(dList)}</div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('prevBtn').disabled = (page <= 1);
+  document.getElementById('nextBtn').disabled = (page >= totalPages);
+}
+
+function pageNav(delta){
+  const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+  const next = page + delta;
+  if(next >= 1 && next <= totalPages){
+    page = next;
+    render();
+    document.getElementById('listContent').scrollTop = 0;
+  }
+}
+
+/* =========================
+   EVENTS
+========================= */
+document.getElementById('file1').addEventListener('change', e => loadFile(e.target.files[0], 1));
+document.getElementById('file2').addEventListener('change', e => loadFile(e.target.files[0], 2));
+document.getElementById('search').addEventListener('input', apply);
+document.getElementById('prevBtn').addEventListener('click', () => pageNav(-1));
+document.getElementById('nextBtn').addEventListener('click', () => pageNav(1));
+document.getElementById('fAll').addEventListener('click', () => setMode('all'));
+document.getElementById('fAct').addEventListener('click', () => setMode('active'));
+document.getElementById('fExp').addEventListener('click', () => setMode('expired'));
+document.getElementById('fNew').addEventListener('click', () => { if(base2Loaded) setMode('new'); });
+document.getElementById('fGone').addEventListener('click', () => { if(base2Loaded) setMode('gone'); });
+/* =========================
+   FIRMS TOGGLE
+========================= */
+let firmsExpanded = false; // default: normal height
+let firmsVisible = true;
+function toggleFirms(){
+  const grid = document.getElementById('firmsGrid');
+  const btn  = document.getElementById('firmsToggle');
+  if(firmsVisible && !firmsExpanded){
+    // normal → expanded
+    grid.classList.add('expanded');
+    btn.textContent = '▼ СКРИЙ';
+    firmsExpanded = true;
+  } else if(firmsVisible && firmsExpanded){
+    // expanded → hidden
+    grid.classList.remove('expanded');
+    grid.classList.add('collapsed');
+    btn.textContent = '▶ ПОКАЖИ';
+    firmsExpanded = false;
+    firmsVisible = false;
+  } else {
+    // hidden → normal
+    grid.classList.remove('collapsed');
+    btn.textContent = '▲ РАЗШИРИ';
+    firmsVisible = true;
+  }
+}
+
+</script>
+</body>
+</html>
