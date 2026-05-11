@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>TaxiDB Sofia v119</title>
+  <title>TaxiDB Pro BG</title>
   <style>
     :root {
       --bg:#050910; --panel:#0f172a; --accent:#22c55e; --text:#f8fafc;
@@ -84,28 +84,32 @@
 
 <header>
   <div class="top-bar">
-    <div class="version">TaxiDB Sofia v119</div>
-    <div id="jsonDate" class="json-date">---</div>
+    <div class="version" id="appTitle">TaxiDB Pro BG</div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <button id="langBtn" onclick="toggleLang()" style="background:none;border:1px solid var(--muted);color:var(--muted);border-radius:6px;font-size:11px;padding:3px 7px;cursor:pointer;font-weight:900">EN</button>
+      <div id="liveClock" style="font-size:12px;color:var(--muted);font-weight:700"></div>
+      <div id="jsonDate" class="json-date">---</div>
+    </div>
   </div>
 
   <div class="stats-bar">
-    <div class="stat-item active" id="fAll"><span id="sAll" class="stat-val">0</span><span class="stat-lab">ОБЩО</span></div>
-    <div class="stat-item" id="fAct"><span id="sAct" class="stat-val" style="color:var(--accent)">0</span><span class="stat-lab">АКТИВНИ</span></div>
-    <div class="stat-item" id="fExp"><span id="sExp" class="stat-val" style="color:var(--red)">0</span><span class="stat-lab">ИЗТЕКЛИ</span></div>
-    <div class="stat-item" id="fNew"><span id="sNew" class="stat-val" style="color:var(--highlight)">0</span><span class="stat-lab">НОВИ</span></div>
-    <div class="stat-item" id="fGone"><span id="sGone" class="stat-val" style="color:#f97316">0</span><span class="stat-lab">ТРЪГНАЛИ</span></div>
+    <div class="stat-item active" id="fAll"><span id="sAll" class="stat-val">0</span><span class="stat-lab" data-bg="ОБЩО" data-en="TOTAL">ОБЩО</span></div>
+    <div class="stat-item" id="fAct"><span id="sAct" class="stat-val" style="color:var(--accent)">0</span><span class="stat-lab" data-bg="АКТИВНИ" data-en="ACTIVE">АКТИВНИ</span></div>
+    <div class="stat-item" id="fExp"><span id="sExp" class="stat-val" style="color:var(--red)">0</span><span class="stat-lab" data-bg="ИЗТЕКЛИ" data-en="EXPIRED">ИЗТЕКЛИ</span></div>
+    <div class="stat-item" id="fNew"><span id="sNew" class="stat-val" style="color:var(--highlight)">0</span><span class="stat-lab" data-bg="НОВИ" data-en="NEW">НОВИ</span></div>
+    <div class="stat-item" id="fGone"><span id="sGone" class="stat-val" style="color:#f97316">0</span><span class="stat-lab" data-bg="ТРЪГНАЛИ" data-en="LEFT">ТРЪГНАЛИ</span></div>
   </div>
 
   <div class="file-row">
     <label class="file-btn" id="l1">БАЗА 1 <input type="file" accept=".json" id="file1"></label>
     <label class="file-btn" id="l2">БАЗА 2 <input type="file" accept=".json" id="file2"></label>
-    <button onclick="location.reload()" style="background:var(--red);border:none;color:#fff;border-radius:12px;font-weight:900;font-size:16px;">RESET</button>
+    <button onclick="location.reload()" style="background:var(--red);border:none;color:#fff;border-radius:12px;font-weight:900;font-size:16px;" id="resetBtn">RESET</button>
   </div>
 </header>
 
 <div class="firms-box">
   <div class="firms-header">
-    <span class="firms-title">ТОП ФИРМИ</span>
+    <span class="firms-title" data-bg="ТОП ФИРМИ" data-en="TOP FIRMS" id="firmsTitle">ТОП ФИРМИ</span>
     <button class="firms-toggle" id="firmsToggle" onclick="toggleFirms()">▼ РАЗШИРИ</button>
   </div>
   <div id="firmsGrid"></div>
@@ -126,6 +130,7 @@
 /* =========================
    STATE
 ========================= */
+let lang = 'bg';            // 'bg' or 'en'
 let raw = new Map();        // reg -> {reg, op, model, validTo:Date(end-of-day), drivers:Set, isNew:boolean, isGone:boolean}
 let oldKeys = new Set();    // regs from база 1
 let newKeys = new Set();    // regs from база 2
@@ -146,6 +151,11 @@ const todayStart = new Date(); todayStart.setHours(0,0,0,0);
 function normReg(s){
   return (s || '').toString().toUpperCase().replace(/\s+/g,'').trim();
 }
+function display(s){
+  if(!s) return s;
+  return lang === 'en' ? translit(s) : s;
+}
+
 function safeText(s){
   return (s ?? '').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'<','>':'>','"':'&quot;',"'":'&#39;'}[m]));
 }
@@ -375,7 +385,7 @@ function rebuildFirms(carsInScope){
   const grid = document.getElementById('firmsGrid');
   grid.innerHTML = sorted.map(([name, s]) => `
     <div class="firm-tag ${selOp===name?'selected':''}" data-op="${safeText(name)}">
-      <div class="firm-name">${safeText(name)}</div>
+      <div class="firm-name">${display(name)}</div>
       <div class="firm-metrics">
         <span class="mCars">🚕${s.cars}</span>
         <span class="mDrv">👤${s.drivers}</span>
@@ -421,8 +431,9 @@ function apply(){
   // search filter
   const base = all.filter(c => {
     if(!q) return true;
-    const blob = (c.reg + ' ' + c.op + ' ' + c.model + ' ' + Array.from(c.drivers).join(' ')).toLowerCase();
-    return blob.includes(q);
+    const raw_blob = (c.reg + ' ' + c.op + ' ' + c.model + ' ' + Array.from(c.drivers).join(' ')).toLowerCase();
+    const en_blob = translit(raw_blob).toLowerCase();
+    return [q, ...translitQuery(q)].some(variant => raw_blob.includes(variant) || en_blob.includes(variant));
   });
 
   // mode filter BEFORE firm selection
@@ -463,20 +474,21 @@ function render(){
     const act = isActive(c.validTo);
     const border = c.isGone ? '#f97316' : (c.isNew ? 'var(--highlight)' : (act ? 'var(--accent)' : 'var(--red)'));
     const tagClass = act ? 'v-ok' : 'v-err';
-    const tagText = act ? 'ВАЛИДЕН ДО' : 'ИЗТЕКЪЛ НА';
+    const t = UI[lang];
+    const tagText = act ? t.valid : t.expired_on;
     const dList = Array.from(c.drivers).join(', ') || '—';
 
     return `
       <div class="car-card" style="border-left:8px solid ${border}">
         <div class="v-tag ${tagClass}">${tagText} ${c.validTo.toLocaleDateString('bg-BG')}</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:900;">#${start+i+1} | ${safeText(c.op)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:900;">#${start+i+1} | ${display(c.op)}</div>
         <div style="margin-bottom:6px;">
           <span class="plate">${safeText(c.reg)}</span>
-          <span style="font-size:16px;margin-left:10px;color:var(--muted);font-weight:900;">${safeText(c.model)}</span>
-          ${c.isNew  ? `<span style="margin-left:10px;color:var(--highlight);font-weight:900;font-size:14px;">★ НОВ</span>` : ''}
-          ${c.isGone ? `<span style="margin-left:10px;color:#f97316;font-weight:900;font-size:14px;">↩ ТРЪГНАЛ</span>` : ''}
+          <span style="font-size:16px;margin-left:10px;color:var(--muted);font-weight:900;">${display(c.model)}</span>
+          ${c.isNew  ? `<span style="margin-left:10px;color:var(--highlight);font-weight:900;font-size:14px;">${t.isNew}</span>` : ''}
+          ${c.isGone ? `<span style="margin-left:10px;color:#f97316;font-weight:900;font-size:14px;">${t.isGone}</span>` : ''}
         </div>
-        <div class="drivers">👤 ${safeText(dList)}</div>
+        <div class="drivers">👤 ${display(dList)}</div>
       </div>
     `;
   }).join('');
@@ -572,6 +584,280 @@ function toggleFirms(){
   }
 }
 
+
+/* =========================
+   TRANSLITERATION BG → EN
+========================= */
+const TRANSLIT = {
+  'А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ж':'Zh','З':'Z',
+  'И':'I','Й':'Y','К':'K','Л':'L','М':'M','Н':'N','О':'O','П':'P',
+  'Р':'R','С':'S','Т':'T','У':'U','Ф':'F','Х':'H','Ц':'Ts','Ч':'Ch',
+  'Ш':'Sh','Щ':'Sht','Ъ':'A','Ь':'','Ю':'Yu','Я':'Ya',
+  'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ж':'zh','з':'z',
+  'и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p',
+  'р':'r','с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'ts','ч':'ch',
+  'ш':'sh','щ':'sht','ъ':'a','ь':'','ю':'yu','я':'ya'
+};
+
+const LEGAL = {
+  'ЕООД':'LLC','ООД':'Ltd','АД':'JSC','ЕАД':'JSC','КД':'LP','ЕТ':'SE'
+};
+
+function translit(str){
+  if(!str) return str;
+  // Replace legal forms first
+  let s = str;
+  Object.entries(LEGAL).forEach(([bg, en]) => {
+    s = s.replace(new RegExp('\\b' + bg + '\\b', 'g'), en);
+  });
+
+  // Special UI word replacements (on cyrillic)
+  const SPECIAL = {
+    'О" КЕЙ':'OK', 'О\'КЕЙ':'OK', 'ТАКСИ':'TAXI', 'Такси':'Taxi', 'такси':'taxi',
+    'БАЗА':'DB', 'База':'DB', 'база':'db',
+    'СТАРА':'OLD', 'Стара':'Old', 'стара':'old',
+    'НОВА':'NEW', 'Нова':'New', 'нова':'new'
+  };
+  Object.entries(SPECIAL).forEach(([bg, en]) => {
+    s = s.split(bg).join(en);
+  });
+  const BRANDS = {
+    // === BRANDS ===
+    // Peugeot
+    'PEZHO':'PEUGEOT','ПЕЖО':'PEUGEOT',
+    // Citroën
+    'SITROEN':'CITROËN','СИТРОЕН':'CITROËN','CITROYEN':'CITROËN',
+    // Dacia
+    'DACHIYA':'DACIA','DAHIYA':'DACIA','DATSIYA':'DACIA','ДАЧИЯ':'DACIA',
+    // Volkswagen
+    'FOLKSVAGEN':'VOLKSWAGEN','FOLKVAGEN':'VOLKSWAGEN','VOLKSVAHEN':'VOLKSWAGEN','ФОЛКСВАГЕН':'VOLKSWAGEN',
+    // Škoda
+    'SHKODA':'ŠKODA','ШКОДА':'ŠKODA',
+    // Renault
+    'RENO':'RENAULT','РЕНО':'RENAULT',
+    // Chevrolet
+    'SHEVROLET':'CHEVROLET','ШЕВРОЛЕТ':'CHEVROLET',
+    // Mercedes-Benz
+    'MERSEDES':'MERCEDES','MERTSEDES':'MERCEDES','МЕРСЕДЕС':'MERCEDES',
+    // Mitsubishi
+    'MITSIBISHI':'MITSUBISHI','MITSYBISHI':'MITSUBISHI','МИЦУБИШИ':'MITSUBISHI',
+    // Hyundai
+    'HYUNDAY':'HYUNDAI','HYUNDEY':'HYUNDAI','HYONDAI':'HYUNDAI',
+    // Nissan
+    'NISAN':'NISSAN','НИСАН':'NISSAN',
+    // Jeep
+    'DZHIP':'JEEP','ДЖИП':'JEEP',
+    // BMW
+    'BMV':'BMW',
+    // Lada
+    'ЛАДА':'LADA',
+    // Mazda
+    'МАЗДА':'MAZDA',
+    // Subaru
+    'СУБАРУ':'SUBARU',
+    // Suzuki
+    'СУЗУКИ':'SUZUKI',
+    // Fiat
+    'ФИАТ':'FIAT',
+    // Alfa Romeo
+    'ALFA-ROMEO':'ALFA ROMEO',
+    // Toyota
+    'TOYOYA':'TOYOTA','ТОЙОТА':'TOYOTA',
+    // Opel
+    'ОПЕЛ':'OPEL',
+    // Ford
+    'ФОРД':'FORD',
+    // Honda
+    'ХОНДА':'HONDA',
+    // Kia
+    'КИА':'KIA',
+    // Seat
+    'SIYAT':'SEAT','СИАТ':'SEAT',
+    // Volvo
+    'VOLVO':'VOLVO','ВОЛВО':'VOLVO',
+    // Land Rover
+    'LAND ROVER':'LAND ROVER','LEND ROVER':'LAND ROVER',
+    // Mini
+    'MINI':'MINI',
+    // Porsche
+    'PORSHE':'PORSCHE','ПОРШЕ':'PORSCHE',
+    // Audi
+    'AUDI':'AUDI','АУД И':'AUDI',
+
+    // === MODELS ===
+    // VW
+    'KADDI':'CADDY','KADI':'CADDY',
+    'TURAN':'TOURAN',
+    'PASAT':'PASSAT',
+    'AY DI':'ID.','AYDI':'ID.',
+    // Ford
+    'B MAKS':'B-MAX','B-MAKS':'B-MAX',
+    'TORNEO KONEKT':'TOURNEO CONNECT','TORNEO KONNEKT':'TOURNEO CONNECT',
+    'TORNEO':'TOURNEO',
+    'KONEKT':'CONNECT','KONNEKT':'CONNECT',
+    'FOKUS':'FOCUS','МОНДИ О':'MONDEO','MONDEO':'MONDEO',
+    'FIYESTA':'FIESTA','FIESTA':'FIESTA',
+    'KUGA':'KUGA','MUSTANG':'MUSTANG',
+    // Hyundai
+    'AYONIK':'IONIQ','IONIK':'IONIQ',
+    'TUSSAN':'TUCSON','TUSAN':'TUCSON',
+    'I 30':'i30','I30':'i30','I 20':'i20','I20':'i20','I 10':'i10','I10':'i10',
+    // Kia
+    'SIID':'CEED','SID':'CEED',
+    'SPORTAZH':'SPORTAGE','SPORTAZH':'SPORTAGE',
+    'SORRENTO':'SORENTO',
+    // Opel
+    'NOCHBAK':'NOTCHBACK','NOSHBAK':'NOTCHBACK',
+    'KORSA':'CORSA','INSIGNIYA':'INSIGNIA','INSIGNIA':'INSIGNIA',
+    'MOKKA':'MOKKA','MOKA':'MOKKA',
+    'ZAFIRA':'ZAFIRA','MERIVA':'MERIVA','ANTARA':'ANTARA',
+    // Skoda
+    'OKTAVIYA':'OCTAVIA','OKTAVIA':'OCTAVIA',
+    'FABIYA':'FABIA',
+    // Renault
+    'MEGAN':'MEGANE','МЕГАН':'MEGANE',
+    'KLIO':'CLIO','КЛИО':'CLIO',
+    'STENIK':'SCENIC','STSENIK':'SCENIC',
+    'LAGUNA':'LAGUNA',
+    'SANDERO':'SANDERO',
+    'DASTER':'DUSTER',
+    'DOKER':'DOKKER',
+    // Dacia
+    'LOGAN':'LOGAN',
+    // Citroen
+    'BERLINGO':'BERLINGO',
+    'PIKASO':'PICASSO','PIKASSO':'PICASSO',
+    // Peugeot
+    'PARTNER':'PARTNER',
+    '308':'308','207':'207','208':'208','407':'407','508':'508',
+    // Fiat
+    'KUBO':'QUBO','PUNTO':'PUNTO','BRAVO':'BRAVO',
+    // Suzuki
+    'SUEYS':'SWACE','SVIFT':'SWIFT',
+    // Mercedes
+    'SPRINTER':'SPRINTER','VIANO':'VIANO','VITO':'VITO',
+    // Mitsubishi
+    'AUТLANDER':'OUTLANDER','AUTLANDER':'OUTLANDER','АУТЛЕНДЕР':'OUTLANDER',
+    'GALANT':'GALANT','KOLT':'COLT',
+    // Nissan
+    'KASHKAY':'QASHQAI','KASHKAI':'QASHQAI','КАШКАЙ':'QASHQAI',
+    'ALMERA':'ALMERA','PRIMERA':'PRIMERA',
+    // Special firms
+    'TAXIMI SOFIYA':'TAXIME SOFIA','TAKSIMI SOFIYA':'TAXIME SOFIA',
+    // Yellow
+    'YELOU':'YELLOW',
+    // OK
+    'O\' KEY':'OK','O" KEY':'OK','O\'\'KEY':'OK',
+  };
+  Object.entries(BRANDS).forEach(([wrong, right]) => {
+    s = s.split(wrong).join(right);
+  });
+
+  // Transliterate remaining cyrillic word by word
+  s = s.replace(/[\u0400-\u04FF]+/g, word => {
+    const isAllUpper = word === word.toUpperCase();
+    const isTitleCase = !isAllUpper && word[0] === word[0].toUpperCase();
+
+    let result = '';
+    for(const c of word){
+      const lo = c.toLowerCase();
+      const mapped = TRANSLIT[lo];
+      if(mapped === undefined){ result += c; continue; }
+      if(isAllUpper){
+        result += mapped.toUpperCase();
+      } else if(isTitleCase && result === ''){
+        // First char of title-case word: capitalize only first letter of mapped
+        result += mapped[0].toUpperCase() + mapped.slice(1);
+      } else {
+        result += mapped;
+      }
+    }
+    return result;
+  });
+
+  // Apply BRANDS again after translit to fix artifacts (YELOU→YELLOW, HYUNDAY→HYUNDAI etc.)
+  Object.entries(BRANDS).forEach(([wrong, right]) => {
+    s = s.split(wrong).join(right);
+  });
+
+  return s;
+}
+
+// Transliterate search query to both BG and latin for matching
+function translitQuery(q){
+  // returns array of variants to match against
+  return [q, translit(q)].map(s => s.toLowerCase());
+}
+
+/* =========================
+   LANGUAGE SYSTEM
+========================= */
+const UI = {
+  bg: {
+    total:'ОБЩО', active:'АКТИВНИ', expired:'ИЗТЕКЛИ', new:'НОВИ', gone:'ТРЪГНАЛИ',
+    firms:'ТОП ФИРМИ', expand:'▼ РАЗШИРИ', collapse:'▲ СКРИЙ',
+    search:'Търсене (рег. №, фирма, водач)…',
+    valid:'ВАЛИДЕН ДО', expired_on:'ИЗТЕКЪЛ НА',
+    isNew:'★ НОВ', isGone:'↩ ТРЪГНАЛ',
+    base1:'СТАРА', base2:'НОВА', reset:'RESET', lang:'EN'
+  },
+  en: {
+    total:'TOTAL', active:'ACTIVE', expired:'EXPIRED', new:'NEW', gone:'LEFT',
+    firms:'TOP FIRMS', expand:'▼ EXPAND', collapse:'▲ COLLAPSE',
+    search:'Search (plate, company, driver)…',
+    valid:'VALID TO', expired_on:'EXPIRED ON',
+    isNew:'★ NEW', isGone:'↩ LEFT',
+    base1:'OLD', base2:'NEW', reset:'RESET', lang:'БГ'
+  }
+};
+
+function toggleLang(){
+  lang = lang === 'bg' ? 'en' : 'bg';
+  applyLang();
+  apply(); // re-render cards and firms with new lang
+}
+
+function applyLang(){
+  const t = UI[lang];
+  document.getElementById('langBtn').textContent = t.lang;
+  document.querySelectorAll('.stat-lab').forEach(el => {
+    const key = el.getAttribute('data-' + lang);
+    if(key) el.textContent = key;
+  });
+  document.getElementById('firmsTitle').textContent = t.firms;
+  document.getElementById('firmsToggle').textContent =
+    firmsExpanded ? t.collapse : t.expand;
+  document.getElementById('search').placeholder = t.search;
+  // Update base button labels
+  ['1','2'].forEach(n => {
+    const lbl = document.getElementById('l'+n);
+    if(!lbl) return;
+    const prefix = n === '1' ? t.base1 : t.base2;
+    if(lbl.classList.contains('loaded')){
+      // loaded: swap prefix but keep filename and date
+      const txt = lbl.childNodes[0].textContent;
+      const rest = txt.replace(/^(СТАРА|НОВА|OLD|NEW):\s*/,'').trim();
+      lbl.childNodes[0].textContent = prefix + ': ' + rest;
+    } else {
+      // not loaded: show DB 1 / DB 2 or БАЗА 1 / БАЗА 2
+      const dbWord = lang === 'en' ? 'DB' : 'БАЗА';
+      lbl.childNodes[0].textContent = dbWord + ' ' + n;
+    }
+  });
+}
+
+/* =========================
+   CLOCK
+========================= */
+function updateClock(){
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const date = now.toLocaleDateString('bg-BG');
+  document.getElementById('liveClock').textContent = date + ' ' + h + ':' + m;
+}
+updateClock();
+setInterval(updateClock, 10000);
 </script>
 </body>
 </html>
