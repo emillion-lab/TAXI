@@ -241,19 +241,18 @@ function extractEntries(item){
 ========================= */
 async function loadFile(file, slot){
   if(!file) return;
-  document.getElementById('l'+slot).classList.add('loaded');
+  const lbl = document.getElementById('l'+slot);
+  lbl.classList.add('loaded');
 
-  // Date requirement: show file date from BASE 2 if present
   const d = new Date(file.lastModified);
-  if(!isNaN(d.getTime())){
-    if(slot === 2){
-      document.getElementById('jsonDate').textContent = formatFileDate(d);
-    } else {
-      // only set from base1 if base2 not loaded yet
-      if(!document.getElementById('l2').classList.contains('loaded')){
-        document.getElementById('jsonDate').textContent = formatFileDate(d);
-      }
-    }
+  const dateStr = !isNaN(d.getTime()) ? d.toLocaleDateString('bg-BG') : '—';
+  const label = slot === 1 ? 'СТАРА' : 'НОВА';
+  // Update button text (keep hidden input inside)
+  lbl.childNodes[0].textContent = label + ': ' + file.name + ' • ' + dateStr;
+
+  // Update top-right date: slot2 always wins, slot1 only if slot2 not loaded
+  if(slot === 2 || !document.getElementById('l2').classList.contains('loaded')){
+    document.getElementById('jsonDate').textContent = dateStr;
   }
 
   const json = JSON.parse(await file.text());
@@ -529,10 +528,16 @@ async function autoFetch(url, slot){
     processJson(json, slot);
     console.log('[AF'+slot+'] raw.size after:', raw.size, 'base2Loaded:', base2Loaded);
     const lbl = document.getElementById('l' + slot);
-    if(lbl) lbl.classList.add('loaded');
-    if(lastMod){
-      const d = new Date(lastMod);
-      document.getElementById('jsonDate').textContent = d.toLocaleDateString('bg-BG');
+    if(lbl){
+      lbl.classList.add('loaded');
+      const fname = url.split('/').pop();
+      const label = slot === 1 ? 'СТАРА' : 'НОВА';
+      const dateStr = lastMod ? new Date(lastMod).toLocaleDateString('bg-BG') : '—';
+      lbl.childNodes[0].textContent = label + ': ' + fname + ' • ' + dateStr;
+      // Update top-right date: slot2 always wins, slot1 only if slot2 not loaded
+      if(slot === 2 || !document.getElementById('l2').classList.contains('loaded')){
+        document.getElementById('jsonDate').textContent = dateStr;
+      }
     }
     return true;
   } catch(e) {
