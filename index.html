@@ -546,12 +546,8 @@ async function autoFetch(url, slot){
   let base = window.location.href.replace(/\/[^\/]*$/, '/');
   if(!base.startsWith('http')) base = 'https://emillion-lab.github.io/TAXI/';
 
-  // Зареждаме и двата файла паралелно
-  const [ok1, ok2] = await Promise.all([
-    autoFetch(base + 'Sofia.json',  1),
-    autoFetch(base + 'Sofia2.json', 2)
-  ]);
-  if(ok1 || ok2) setMode('active');
+  const ok = await autoFetch(base + 'Sofia2.json', 1);
+  if(ok) setMode('active');
 })();
 /* =========================
    FIRMS TOGGLE
