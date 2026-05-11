@@ -544,11 +544,14 @@ async function autoFetch(url, slot){
 // Автоматично зареждане при старт
 (async () => {
   let base = window.location.href.replace(/\/[^\/]*$/, '/');
-  // Ако се отваря като about:srcdoc или file:// — използвай hardcoded URL
   if(!base.startsWith('http')) base = 'https://emillion-lab.github.io/TAXI/';
-  await autoFetch(base + 'Sofia.json',  1);
-  const ok = await autoFetch(base + 'Sofia2.json', 2);
-  if(ok) setMode('active');
+
+  // Зареждаме и двата файла паралелно
+  const [ok1, ok2] = await Promise.all([
+    autoFetch(base + 'Sofia.json',  1),
+    autoFetch(base + 'Sofia2.json', 2)
+  ]);
+  if(ok1 || ok2) setMode('active');
 })();
 /* =========================
    FIRMS TOGGLE
