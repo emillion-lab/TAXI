@@ -546,8 +546,9 @@ async function autoFetch(url, slot){
   let base = window.location.href.replace(/\/[^\/]*$/, '/');
   if(!base.startsWith('http')) base = 'https://emillion-lab.github.io/TAXI/';
 
-  const ok = await autoFetch(base + 'Sofia2.json', 1);
-  if(ok) setMode('active');
+  await autoFetch(base + 'Sofia.json',  1);
+  const ok = await autoFetch(base + 'Sofia2.json', 2);
+  setMode('active');
 })();
 /* =========================
    FIRMS TOGGLE
