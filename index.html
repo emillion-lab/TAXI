@@ -34,9 +34,8 @@
     .firms-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
     .firms-toggle{background:none;border:1px solid rgba(148,163,184,.4);color:var(--muted);border-radius:6px;font-size:11px;padding:2px 8px;cursor:pointer;font-weight:700}
     .firms-toggle:hover{border-color:var(--accent);color:var(--accent)}
-    #firmsGrid{max-height:150px;overflow-y:auto;display:grid;grid-template-columns:1fr;gap:5px;padding:6px 8px 8px 8px;transition:max-height .25s ease,padding .25s ease}
+    #firmsGrid{max-height:152px;overflow-y:auto;display:grid;grid-template-columns:1fr;gap:5px;padding:6px 8px 8px 8px;transition:max-height .25s ease}
     #firmsGrid.expanded{max-height:55vh}
-    #firmsGrid.collapsed{max-height:0;padding-top:0;padding-bottom:0;overflow:hidden}
     .firm-tag{
       background:#050910;padding:7px 10px;border-radius:10px;font-size:13px;
       display:flex;justify-content:space-between;align-items:center;cursor:pointer;
@@ -107,7 +106,7 @@
 <div class="firms-box">
   <div class="firms-header">
     <span class="firms-title">ТОП ФИРМИ</span>
-    <button class="firms-toggle" id="firmsToggle" onclick="toggleFirms()">▲ СКРИЙ</button>
+    <button class="firms-toggle" id="firmsToggle" onclick="toggleFirms()">▼ РАЗШИРИ</button>
   </div>
   <div id="firmsGrid"></div>
 </div>
@@ -558,28 +557,18 @@ async function autoFetch(url, slot){
 /* =========================
    FIRMS TOGGLE
 ========================= */
-let firmsExpanded = false; // default: normal height
-let firmsVisible = true;
+let firmsExpanded = false;
 function toggleFirms(){
   const grid = document.getElementById('firmsGrid');
   const btn  = document.getElementById('firmsToggle');
-  if(firmsVisible && !firmsExpanded){
-    // normal → expanded
+  if(!firmsExpanded){
     grid.classList.add('expanded');
-    btn.textContent = '▼ СКРИЙ';
+    btn.textContent = '▲ СКРИЙ';
     firmsExpanded = true;
-  } else if(firmsVisible && firmsExpanded){
-    // expanded → hidden
-    grid.classList.remove('expanded');
-    grid.classList.add('collapsed');
-    btn.textContent = '▶ ПОКАЖИ';
-    firmsExpanded = false;
-    firmsVisible = false;
   } else {
-    // hidden → normal
-    grid.classList.remove('collapsed');
-    btn.textContent = '▲ РАЗШИРИ';
-    firmsVisible = true;
+    grid.classList.remove('expanded');
+    btn.textContent = '▼ РАЗШИРИ';
+    firmsExpanded = false;
   }
 }
 
