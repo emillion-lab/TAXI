@@ -530,7 +530,7 @@ async function autoFetch(url, slot){
     console.log('[AF'+slot+'] raw.size after:', raw.size, 'base2Loaded:', base2Loaded);
     const lbl = document.getElementById('l' + slot);
     if(lbl) lbl.classList.add('loaded');
-    if(lastMod && slot === 2){
+    if(lastMod){
       const d = new Date(lastMod);
       document.getElementById('jsonDate').textContent = d.toLocaleDateString('bg-BG');
     }
