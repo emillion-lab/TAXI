@@ -3,17 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>TaxiDB Pro v100 – София</title>
+  <title>TaxiDB Pro v101 – София</title>
   <style>
     :root {
       --bg:#050910; --panel:#0f172a; --accent:#22c55e; --text:#f8fafc;
       --muted:#94a3b8; --highlight:#facc15; --line:#1e293b;
-      --blue:#3b82f6; --red:#ef4444; --orange:#f97316;
+      --blue:#3b82f6; --red:#ef4444; --orange:#f97316; --purple:#a855f7;
     }
     *{box-sizing:border-box;font-family:'Segoe UI',Roboto,sans-serif}
     body{margin:0;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
 
-    /* ── HEADER ── */
+    /* HEADER */
     header{background:#020617;border-bottom:2px solid var(--accent);padding:8px;flex-shrink:0}
     .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:6px;flex-wrap:wrap}
     .version{color:var(--accent);font-weight:900;font-size:16px;white-space:nowrap}
@@ -22,7 +22,6 @@
     #liveClock{font-size:12px;color:var(--muted);font-weight:700;white-space:nowrap}
     #langBtn{background:none;border:1px solid var(--muted);color:var(--muted);border-radius:6px;font-size:11px;padding:3px 7px;cursor:pointer;font-weight:900}
     #langBtn:hover{border-color:var(--accent);color:var(--accent)}
-
     .io-zone{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
     .file-lbl{font-size:11px;font-weight:900;padding:5px 10px;background:var(--line);border-radius:4px;cursor:pointer;transition:0.2s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
     .file-lbl:hover{background:#334155}
@@ -30,21 +29,31 @@
     .file-lbl input{display:none}
     #resetBtn{background:var(--red);border:none;color:#fff;border-radius:6px;font-weight:900;font-size:13px;padding:5px 12px;cursor:pointer}
 
-    /* ── STATS ── */
-    .stats-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:6px}
-    .stat-item{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 2px;text-align:center;cursor:pointer;transition:0.2s}
+    /* STATS — 7 колони */
+    .stats-bar{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:6px}
+    .stat-item{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:5px 2px;text-align:center;cursor:pointer;transition:0.2s}
     .stat-item:hover{border-color:var(--muted)}
     .stat-item.active{border-color:var(--accent);background:rgba(34,197,94,0.05)}
     .stat-item.active-mig{border-color:var(--blue);background:rgba(59,130,246,0.05)}
-    .stat-val{font-size:18px;font-weight:900;display:block}
-    .stat-lbl{font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+    .stat-item.active-exp{border-color:var(--orange);background:rgba(249,115,22,0.05)}
+    .stat-val{font-size:16px;font-weight:900;display:block}
+    .stat-lbl{font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
 
-    /* ── SEARCH ── */
+    /* FILTERS BAR */
+    .filters-bar{background:#020617;border-bottom:1px solid var(--line);padding:5px 8px;display:flex;gap:6px;align-items:center;flex-shrink:0;flex-wrap:wrap}
+    .flt-group{display:flex;gap:4px;align-items:center;font-size:11px;color:var(--muted);font-weight:700}
+    .flt-group span{white-space:nowrap}
+    select.flt-sel{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:4px;padding:3px 6px;font-size:11px;font-weight:700;cursor:pointer;outline:none}
+    select.flt-sel:focus{border-color:var(--accent)}
+    .flt-chip{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;color:var(--muted)}
+    .flt-chip.on{border-color:var(--highlight);color:var(--highlight);background:rgba(250,204,21,0.07)}
+
+    /* SEARCH */
     .search-container{padding:7px 8px;background:#020617;border-bottom:1px solid var(--line);flex-shrink:0}
     .search-box{width:100%;padding:10px 14px;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--accent);color:#fff;border-radius:6px;font-size:14px;outline:none}
     .search-box:focus{border-color:var(--accent)}
 
-    /* ── FIRMS ── */
+    /* FIRMS */
     .firms-wrapper{background:#020617;border-bottom:1px solid var(--line);padding:0 8px 6px 8px;flex-shrink:0;display:flex;flex-direction:column}
     .firms-ctrl{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding-top:4px}
     .firms-title{font-size:11px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
@@ -55,44 +64,65 @@
     .firm-tag:hover{border-color:var(--muted)}
     .firm-tag.selected{border-color:var(--highlight);background:rgba(250,204,21,0.07)}
     .firm-name{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
-    .firm-metrics{display:flex;gap:6px;font-size:10px;margin-top:2px;font-weight:bold}
-    .mCars{color:var(--accent)} .mDrv{color:var(--blue)} .mNew{color:var(--highlight)} .mExp{color:var(--orange)}
-    .firm-tag.selected .mCars,.firm-tag.selected .mDrv,.firm-tag.selected .mNew,.firm-tag.selected .mExp{color:var(--text)}
+    .firm-metrics{display:flex;gap:5px;font-size:10px;margin-top:2px;font-weight:bold;flex-wrap:wrap}
+    .mCars{color:var(--accent)} .mDrv{color:var(--blue)} .mNew{color:var(--highlight)} .mExp{color:var(--orange)} .mMig{color:var(--purple)}
+    .firm-tag.selected .mCars,.firm-tag.selected .mDrv,.firm-tag.selected .mNew,.firm-tag.selected .mExp,.firm-tag.selected .mMig{color:var(--text)}
     .toggle-btn{background:var(--line);border:none;color:var(--text);font-size:10px;font-weight:900;padding:4px 8px;border-radius:4px;cursor:pointer}
 
-    /* ── MAIN ── */
+    /* MAIN */
     main{flex:1;display:flex;overflow:hidden;position:relative}
     .list-side{flex:1;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--line)}
     .list-scroll{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px}
 
-    /* ── CARDS ── */
+    /* CAR CARDS */
     .car-card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 12px;position:relative;cursor:pointer;transition:0.1s}
     .car-card:hover{border-color:var(--muted)}
     .car-card.selected-card{border-color:var(--highlight) !important;background:#1e293b}
     .plate{font-family:monospace;font-size:18px;font-weight:900;background:#fff;color:#000;padding:2px 6px;border-radius:4px;display:inline-block;letter-spacing:0.5px}
     .v-tag{position:absolute;top:10px;right:10px;font-size:10px;font-weight:900;padding:2px 6px;border-radius:4px}
     .v-ok{background:rgba(34,197,94,0.15);color:var(--accent);border:1px solid var(--accent)}
+    .v-warn{background:rgba(249,115,22,0.15);color:var(--orange);border:1px solid var(--orange)}
     .v-err{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid var(--red)}
     .drivers{margin-top:6px;font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .car-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+    .ctag{font-size:10px;font-weight:900;padding:1px 6px;border-radius:3px}
+    .ctag-liz{background:rgba(59,130,246,0.15);color:var(--blue);border:1px solid rgba(59,130,246,0.4)}
+    .ctag-muni{background:rgba(148,163,184,0.12);color:var(--muted);border:1px solid rgba(148,163,184,0.3)}
+    .ctag-old{background:rgba(249,115,22,0.15);color:var(--orange);border:1px solid rgba(249,115,22,0.4)}
+    .ctag-uvlta{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.4)}
+    .ctag-soon{background:rgba(250,204,21,0.15);color:var(--highlight);border:1px solid rgba(250,204,21,0.4)}
 
-    /* ── MIGRATION ROWS ── */
+    /* MIGRATION ROWS */
     .migration-row{display:flex;justify-content:space-between;background:var(--panel);border:1px solid var(--line);padding:10px;border-radius:6px;align-items:center;gap:10px}
     .mig-count{background:var(--blue);color:#fff;padding:4px 10px;border-radius:4px;font-weight:bold;font-size:14px;flex-shrink:0}
 
-    /* ── DETAILS PANEL ── */
-    .details-side{width:340px;background:#020617;display:flex;flex-direction:column;overflow-y:auto;padding:12px;gap:10px;flex-shrink:0}
-    @media(max-width:800px){.details-side{display:none}}
+    /* DETAILS PANEL */
+    .details-side{width:350px;background:#020617;display:flex;flex-direction:column;overflow-y:auto;padding:12px;gap:10px;flex-shrink:0}
+    @media(max-width:860px){.details-side{display:none}}
     .detail-section{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px}
     .detail-title{font-size:11px;color:var(--muted);font-weight:900;text-transform:uppercase;margin-bottom:6px;letter-spacing:.4px}
+    .detail-row{display:flex;justify-content:space-between;align-items:flex-start;font-size:12px;padding:3px 0;border-bottom:1px solid var(--line)}
+    .detail-row:last-child{border-bottom:none}
+    .detail-key{color:var(--muted);font-weight:700;flex-shrink:0;margin-right:8px}
+    .detail-val{text-align:right;word-break:break-word}
     .timeline{margin-top:6px;display:flex;flex-direction:column;gap:6px;padding-left:4px}
     .timeline-item{border-left:2px solid var(--line);padding-left:12px;position:relative;padding-bottom:4px}
     .timeline-item::before{content:'';position:absolute;left:-5px;top:4px;width:8px;height:8px;border-radius:50%;background:var(--muted)}
     .timeline-item.active-node::before{background:var(--accent)}
     .timeline-item.migrated-node::before{background:var(--blue)}
+    .timeline-item.gone-node::before{background:var(--orange)}
     .timeline-date{font-size:11px;font-weight:bold;color:var(--muted)}
     .timeline-firm{font-size:13px;font-weight:700;margin-top:2px}
+    /* Лиценз-история редове */
+    .lic-hist{display:flex;flex-direction:column;gap:3px;margin-top:4px}
+    .lic-row{display:flex;justify-content:space-between;font-size:11px;padding:2px 4px;border-radius:3px}
+    .lic-row.lic-ok{background:rgba(34,197,94,0.08);border-left:2px solid var(--accent)}
+    .lic-row.lic-exp{background:rgba(239,68,68,0.06);border-left:2px solid rgba(239,68,68,0.3)}
+    .lic-row.lic-soon{background:rgba(250,204,21,0.08);border-left:2px solid var(--highlight)}
+    .lic-num{color:var(--muted);font-family:monospace}
+    .lic-dates{color:var(--text);font-weight:700}
 
-    /* ── NAV BAR ── */
+    /* NAV BAR */
     .nav-bar{background:#020617;border-top:1px solid var(--line);padding:6px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
     .nav-btn{background:var(--panel);border:1px solid var(--line);color:#fff;padding:7px 16px;border-radius:4px;font-weight:700;cursor:pointer;user-select:none}
     .nav-btn:disabled{opacity:0.25;cursor:not-allowed}
@@ -103,7 +133,7 @@
 
 <header>
   <div class="top-bar">
-    <div class="version" id="appTitle">TaxiDB Pro <span style="font-size:11px;color:var(--muted);font-weight:normal;">v100 | Миграционен Анализ</span></div>
+    <div class="version" id="appTitle">TaxiDB Pro <span style="font-size:11px;color:var(--muted);font-weight:normal;">v101</span></div>
     <div class="top-right">
       <button id="langBtn" onclick="toggleLang()">EN</button>
       <div id="liveClock"></div>
@@ -115,37 +145,52 @@
       </div>
     </div>
   </div>
-
   <div class="stats-bar">
-    <div class="stat-item active" id="fAll">
-      <span class="stat-val" id="sAll">0</span>
-      <span class="stat-lbl" data-bg="ОБЩО" data-en="TOTAL">ОБЩО</span>
-    </div>
-    <div class="stat-item" id="fAct">
-      <span class="stat-val" id="sAct" style="color:var(--accent)">0</span>
-      <span class="stat-lbl" data-bg="ВАЛИДНИ" data-en="VALID">ВАЛИДНИ</span>
-    </div>
-    <div class="stat-item" id="fExp">
-      <span class="stat-val" id="sExp" style="color:var(--red)">0</span>
-      <span class="stat-lbl" data-bg="ИЗТЕКЛИ" data-en="EXPIRED">ИЗТЕКЛИ</span>
-    </div>
-    <div class="stat-item" id="fNew">
-      <span class="stat-val" id="sNew" style="color:var(--highlight)">0</span>
-      <span class="stat-lbl" data-bg="★ НОВИ" data-en="★ NEW">★ НОВИ</span>
-    </div>
-    <div class="stat-item" id="fGone">
-      <span class="stat-val" id="sGone" style="color:var(--orange)">0</span>
-      <span class="stat-lbl" data-bg="↩ ТРЪГНАЛИ" data-en="↩ LEFT">↩ ТРЪГНАЛИ</span>
-    </div>
-    <div class="stat-item" id="fMig">
-      <span class="stat-val" id="sMig" style="color:var(--blue)">0</span>
-      <span class="stat-lbl" style="color:var(--blue)" data-bg="⇄ МИГРАЦИЯ" data-en="⇄ MIGRATED">⇄ МИГРАЦИЯ</span>
-    </div>
+    <div class="stat-item active" id="fAll"><span class="stat-val" id="sAll">0</span><span class="stat-lbl" data-bg="ОБЩО" data-en="TOTAL">ОБЩО</span></div>
+    <div class="stat-item" id="fAct"><span class="stat-val" id="sAct" style="color:var(--accent)">0</span><span class="stat-lbl" data-bg="ВАЛИДНИ" data-en="VALID">ВАЛИДНИ</span></div>
+    <div class="stat-item" id="fExp"><span class="stat-val" id="sExp" style="color:var(--red)">0</span><span class="stat-lbl" data-bg="ИЗТЕКЛИ" data-en="EXPIRED">ИЗТЕКЛИ</span></div>
+    <div class="stat-item" id="fSoon"><span class="stat-val" id="sSoon" style="color:var(--highlight)">0</span><span class="stat-lbl" data-bg="≤30 ДНИ" data-en="≤30 DAYS">≤30 ДНИ</span></div>
+    <div class="stat-item" id="fNew"><span class="stat-val" id="sNew" style="color:var(--highlight)">0</span><span class="stat-lbl" data-bg="★ НОВИ" data-en="★ NEW">★ НОВИ</span></div>
+    <div class="stat-item" id="fGone"><span class="stat-val" id="sGone" style="color:var(--orange)">0</span><span class="stat-lbl" data-bg="↩ ТРЪГНАЛИ" data-en="↩ LEFT">↩ ТРЪГНАЛИ</span></div>
+    <div class="stat-item" id="fMig"><span class="stat-val" id="sMig" style="color:var(--blue)">0</span><span class="stat-lbl" style="color:var(--blue)" data-bg="⇄ МИГРАЦИЯ" data-en="⇄ MIGRATED">⇄ МИГРАЦИЯ</span></div>
   </div>
 </header>
 
+<!-- FILTERS BAR -->
+<div class="filters-bar" id="filtersBar">
+  <div class="flt-group">
+    <span data-bg="СОБСТВ:" data-en="OWN:">СОБСТВ:</span>
+    <select class="flt-sel" id="fltOwnership" onchange="apply()">
+      <option value="">—</option>
+      <option value="собствено" data-bg="Собствено" data-en="Own">Собствено</option>
+      <option value="лизинг" data-bg="Лизинг" data-en="Leasing">Лизинг</option>
+      <option value="наем" data-bg="Наем" data-en="Rent">Наем</option>
+      <option value="друго" data-bg="Друго" data-en="Other">Друго</option>
+    </select>
+  </div>
+  <div class="flt-group">
+    <span data-bg="ОБЩ:" data-en="MUN:">ОБЩ:</span>
+    <select class="flt-sel" id="fltMuni" onchange="apply()">
+      <option value="">—</option>
+    </select>
+  </div>
+  <div class="flt-group">
+    <span data-bg="ГОДИШНИК:" data-en="CAR AGE:">ГОДИШНИК:</span>
+    <select class="flt-sel" id="fltAge" onchange="apply()">
+      <option value="">—</option>
+      <option value="old" data-bg="&gt;15 год." data-en="&gt;15 yrs">&gt;15 год.</option>
+      <option value="mid" data-bg="7–15 год." data-en="7–15 yrs">7–15 год.</option>
+      <option value="new" data-bg="&lt;7 год." data-en="&lt;7 yrs">&lt;7 год.</option>
+    </select>
+  </div>
+  <div id="fltUvltaWrap" class="flt-group" style="display:none">
+    <button class="flt-chip" id="fltUvlta" onclick="toggleUvlta()" data-bg="⚠ UVLTA изтекло" data-en="⚠ UVLTA expired">⚠ UVLTA изтекло</button>
+  </div>
+  <div class="flt-group" style="margin-left:auto;font-size:11px;color:var(--muted)" id="fltCount"></div>
+</div>
+
 <div class="search-container">
-  <input type="text" class="search-box" id="search" placeholder="Търсене по Рег. №, Фирма, Модел или Шофьор…" />
+  <input type="text" class="search-box" id="search" placeholder="Търсене по Рег. №, Фирма, Модел или Шофьор…"/>
 </div>
 
 <div class="firms-wrapper" id="firmsWrapper">
@@ -167,26 +212,38 @@
   </div>
 
   <div class="details-side" id="detailsPanel">
-    <div style="text-align:center;color:var(--muted);margin-top:40px;font-size:13px;" id="detailsPlaceholder">
-      Изберете автомобил за пълен хронологичен анализ.
-    </div>
+    <div style="text-align:center;color:var(--muted);margin-top:40px;font-size:13px;" id="detailsPlaceholder">Изберете автомобил за пълен анализ.</div>
     <div id="detailsActual" style="display:none;flex-direction:column;gap:10px;">
+      <!-- Plate + Model -->
       <div class="detail-section" style="text-align:center;background:var(--line);">
         <div id="dPlate" class="plate" style="font-size:24px;margin-bottom:6px;">—</div>
         <div id="dModel" style="font-size:15px;font-weight:bold;color:var(--highlight);margin-top:4px;">—</div>
+        <div id="dCarAge" style="font-size:11px;color:var(--muted);margin-top:3px;"></div>
       </div>
+      <!-- Operator -->
       <div class="detail-section">
         <div class="detail-title" id="dtOp">Текущ Оператор</div>
-        <div id="dOp" style="font-size:14px;font-weight:bold;">—</div>
+        <div id="dOp" style="font-size:14px;font-weight:bold;margin-bottom:6px;">—</div>
+        <div id="dMuni" style="font-size:11px;color:var(--muted);"></div>
       </div>
+      <!-- License status -->
       <div class="detail-section">
         <div class="detail-title" id="dtStatus">Статус на Разрешителното</div>
-        <div id="dStatus" style="font-size:13px;font-weight:bold;">—</div>
+        <div id="dStatus" style="font-size:13px;font-weight:bold;margin-bottom:4px;">—</div>
+        <div id="dOwnership" style="font-size:11px;color:var(--muted);margin-bottom:2px;"></div>
+        <div id="dLicNum" style="font-size:11px;color:var(--muted);font-family:monospace;"></div>
       </div>
-      <div class="detail-section">
+      <!-- Drivers -->
+      <div class="detail-section" id="dDriversSection">
         <div class="detail-title" id="dtDrivers">Шофьори</div>
-        <div id="dDrivers" style="font-size:13px;color:var(--muted);line-height:1.5;">—</div>
+        <div id="dDrivers" style="font-size:12px;color:var(--muted);line-height:1.7;">—</div>
       </div>
+      <!-- Full license history (TLVD) -->
+      <div class="detail-section" id="dLicHistSection" style="display:none">
+        <div class="detail-title" id="dtLicHist">История на Лицензите</div>
+        <div class="lic-hist" id="dLicHist"></div>
+      </div>
+      <!-- Migration timeline -->
       <div class="detail-section" style="border-color:var(--blue);background:rgba(59,130,246,0.02)">
         <div class="detail-title" style="color:var(--blue)" id="dtTimeline">Хронология &amp; Миграция</div>
         <div class="timeline" id="dTimeline"></div>
@@ -199,62 +256,130 @@
 /* ================================================
    STATE
 ================================================ */
-let lang = 'bg';
-let raw = new Map();
-let oldKeys = new Set();
-let newKeys = new Set();
-let historyMap = new Map();
-let base2Loaded = false;
-let filtered = [];
-let page = 1;
-const pageSize = 50;
-let fMode = 'all';
-let selOp = '';
-let selectedReg = null;
+let lang='bg';
+let raw=new Map();
+let oldKeys=new Set();
+let newKeys=new Set();
+let historyMap=new Map();    // reg -> {slot1, slot2}
+let licenseHistory=new Map();// reg -> [{licenseNumber, validFrom, validTo}] — full TLVD history
+let vehicleExtra=new Map();  // reg -> {firstRegDate, ownership, muni, operatorIdn, licenseNumber(op)}
+let driverMap=new Map();     // reg -> [{driverName, uvltaNumber, uvltaEndDate, contractDate, forOwnAccount}]
+let base2Loaded=false;
+let filtered=[];
+let page=1;
+const pageSize=50;
+let fMode='all';
+let selOp='';
+let selectedReg=null;
+let fltUvltaOn=false;
+let fileDate1='', fileDate2='';
+let selMigKey=null;  // selected migration row key "FROM➔TO"
 
-// Store file dates for labels
-let fileDate1 = '', fileDate2 = '';
-
-const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+const todayStart=new Date(); todayStart.setHours(0,0,0,0);
+const in30=new Date(todayStart); in30.setDate(in30.getDate()+30);
+const thisYear=todayStart.getFullYear();
 
 /* ================================================
-   CORE HELPERS
+   HELPERS
 ================================================ */
-function normReg(s){
-  return (s||'').toString().toUpperCase().replace(/\s+/g,'').trim();
-}
-function safeText(s){
-  return (s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
-function display(s){
-  return lang === 'en' ? translit(s||'') : (s||'');
-}
+function normReg(s){ return (s||'').toString().toUpperCase().replace(/\s+/g,'').trim(); }
+function safeText(s){ return (s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function display(s){ return lang==='en'?translit(s||''):(s||''); }
 function formatDate(d){
   if(!d||isNaN(d.getTime())) return '—';
   return `${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()} г.`;
 }
+
 function parseValidTo(value){
   if(!value) return new Date(2000,0,1,0,0,0,0);
   if(typeof value==='string'){
     const m=value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if(m) return new Date(+m[1],+m[2]-1,+m[3],23,59,59,999);
+    if(m){
+      const y=+m[1];
+      if(y<1900) return new Date(2000,0,1,0,0,0,0); // guard bad dates (e.g. year 13)
+      return new Date(y,+m[2]-1,+m[3],23,59,59,999);
+    }
   }
   const dt=new Date(value);
   if(isNaN(dt.getTime())) return new Date(2000,0,1,0,0,0,0);
-  return new Date(dt.getFullYear(),dt.getMonth(),dt.getDate(),23,59,59,999);
+  const y=dt.getFullYear();
+  if(y<1900) return new Date(2000,0,1,0,0,0,0);
+  return new Date(y,dt.getMonth(),dt.getDate(),23,59,59,999);
 }
+
+function parseDate(value){
+  if(!value) return null;
+  if(typeof value==='string'){
+    const m=value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(m){ const y=+m[1]; return y<1900?null:new Date(y,+m[2]-1,+m[3]); }
+  }
+  const dt=new Date(value);
+  if(isNaN(dt.getTime())||dt.getFullYear()<1900) return null;
+  return dt;
+}
+
 function isActive(validTo){ return validTo>=todayStart; }
+function isExpiringSoon(validTo){ return validTo>=todayStart&&validTo<=in30; }
+function carAgeYears(firstRegDate){
+  if(!firstRegDate) return null;
+  return thisYear-firstRegDate.getFullYear();
+}
 
 /* ================================================
-   EXTRACT ENTRIES — supports both JSON shapes
+   EXTRACT — supports both JSON shapes
+   NOW ALSO extracts: firstRegistrationDate, ownership,
+   municipality, uvltaEndDate, full TLVD license history
 ================================================ */
 function extractEntries(item){
   const out=[];
-  const op=(item.operatorName||item.operator||item.operatorTitle||"ДРУГИ").toString().trim()||"ДРУГИ";
+  const op=(item.operatorName||item.operator||item.operatorTitle||'ДРУГИ').toString().trim()||'ДРУГИ';
+  const muni=(item.registratorMunicipalityName||'').split(',')[0].trim();
+  const opIdn=item.operatorIdn||'';
+  const opLicNum=item.licenseNumber||'';
 
+  // Build driver list for this operator item
+  const driverList=(item.drivers||[]).map(d=>({
+    name:(d.driverName||'').trim(),
+    uvltaNumber:d.uvltaNumber||'',
+    uvltaEndDate:parseDate(d.uvltaEndDate),
+    contractDate:parseDate(d.contractDate),
+    forOwnAccount:!!d.forOwnAccount
+  })).filter(d=>d.name);
+
+  const processVehicle=(reg, model, validTo, driverName, ownership, firstRegDate, licenseNumber, licValidFrom, licValidTo)=>{
+    if(!reg) return;
+    out.push({reg, op, model, validTo, driver:driverName||'ТИТУЛЯР'});
+
+    // vehicleExtra (only set once per reg; prefer richer data)
+    if(!vehicleExtra.has(reg)){
+      vehicleExtra.set(reg,{firstRegDate, ownership:ownership||'', muni, operatorIdn:opIdn, opLicNum});
+    } else {
+      const ex=vehicleExtra.get(reg);
+      if(!ex.firstRegDate&&firstRegDate) ex.firstRegDate=firstRegDate;
+      if(!ex.ownership&&ownership) ex.ownership=ownership;
+      if(!ex.muni&&muni) ex.muni=muni;
+    }
+
+    // driverMap
+    if(driverList.length&&!driverMap.has(reg)){
+      driverMap.set(reg, driverList);
+    }
+
+    // licenseHistory per vehicle
+    if(licenseNumber&&licValidFrom&&licValidTo){
+      if(!licenseHistory.has(reg)) licenseHistory.set(reg,[]);
+      const hist=licenseHistory.get(reg);
+      // avoid duplicates
+      if(!hist.some(h=>h.licenseNumber===licenseNumber)){
+        hist.push({licenseNumber, validFrom:licValidFrom, validTo:licValidTo});
+      }
+    }
+  };
+
+  // Shape A: taxiLicensesVehiclesDrivers (full history)
   const vList=item.taxiLicensesVehiclesDrivers;
   if(Array.isArray(vList)&&vList.length>0){
-    const driverPool=(item.drivers||[]).map(d=>(d.driverName||'').trim()).filter(Boolean);
+    const driverPool=driverList.map(d=>d.name);
     vList.forEach(vData=>{
       const v=vData.taxiLicenseVehicle||{};
       const reg=normReg(v.registerNumber||v.regNumber||'');
@@ -263,12 +388,17 @@ function extractEntries(item){
       const lic=vData.taxiLicense||{};
       const validTo=parseValidTo(lic.validTo||lic.validToDate||vData.validTo);
       const driverObj=vData.taxiLicenseDriver||{};
-      const driver=(driverObj.driverName||driverPool[0]||'ТИТУЛЯР').toString().trim()||'ТИТУЛЯР';
-      out.push({reg,op,model,validTo,driver});
+      const driverName=(driverObj.driverName||driverPool[0]||'ТИТУЛЯР').toString().trim();
+      const ownership=(v.ownership||'').toLowerCase();
+      const firstRegDate=parseDate(v.firstRegistrationDate);
+      const licVF=parseDate(lic.validFrom);
+      const licVT=parseValidTo(lic.validTo||lic.validToDate);
+      processVehicle(reg, model, validTo, driverName, ownership, firstRegDate, lic.licenseNumber||'', licVF, licVT);
     });
     return out;
   }
 
+  // Shape B: flat vehicles[]
   const flatList=item.vehicles||item.items||null;
   if(Array.isArray(flatList)){
     flatList.forEach(vData=>{
@@ -277,12 +407,15 @@ function extractEntries(item){
       if(!reg) return;
       const model=(v.markAndModel||v.model||'—').toString().trim()||'—';
       const validTo=parseValidTo(vData.validTo||vData.taxiLicense?.validTo||item.validTo);
-      const driver=(vData.driverName||vData.taxiLicenseDriver?.driverName||'ТИТУЛЯР').toString().trim()||'ТИТУЛЯР';
-      out.push({reg,op,model,validTo,driver});
+      const driverName=(vData.driverName||vData.taxiLicenseDriver?.driverName||'ТИТУЛЯР').toString().trim();
+      const ownership=(v.ownership||vData.ownership||'').toLowerCase();
+      const firstRegDate=parseDate(v.firstRegistrationDate||vData.firstRegistrationDate);
+      processVehicle(reg, model, validTo, driverName, ownership, firstRegDate, '', null, null);
     });
     return out;
   }
 
+  // Shape C: single record
   const veh=item.taxiLicenseVehicle||item.vehicle||null;
   if(veh&&(veh.registerNumber||veh.regNumber)){
     const reg=normReg(veh.registerNumber||veh.regNumber);
@@ -290,34 +423,34 @@ function extractEntries(item){
     const model=(veh.markAndModel||veh.model||'—').toString().trim()||'—';
     const lic=item.taxiLicense||item.license||null;
     const validTo=parseValidTo(lic?.validTo||lic?.validToDate||item.validTo);
-    const driver=(item.driverName||item.taxiLicenseDriver?.driverName||'ТИТУЛЯР').toString().trim()||'ТИТУЛЯР';
-    out.push({reg,op,model,validTo,driver});
+    const driverName=(item.driverName||item.taxiLicenseDriver?.driverName||'ТИТУЛЯР').toString().trim();
+    const ownership=(veh.ownership||'').toLowerCase();
+    const firstRegDate=parseDate(veh.firstRegistrationDate);
+    processVehicle(reg, model, validTo, driverName, ownership, firstRegDate, lic?.licenseNumber||'', null, null);
   }
   return out;
 }
 
 /* ================================================
-   LOAD FILE (manual upload)
+   LOAD FILE (manual)
 ================================================ */
 async function loadFile(file,slot){
   if(!file) return;
   const d=new Date(file.lastModified);
   const dateStr=!isNaN(d.getTime())?formatDate(d):'—';
-  updateFileLabel(slot, file.name, dateStr);
-  if(slot===2||!document.getElementById('l2').classList.contains('loaded')){
+  updateFileLabel(slot,file.name,dateStr);
+  if(slot===2||!document.getElementById('l2').classList.contains('loaded'))
     document.getElementById('jsonDate').textContent=dateStr;
-  }
   const json=JSON.parse(await file.text());
   processJson(json,slot);
 }
 
-function updateFileLabel(slot, fname, dateStr){
+function updateFileLabel(slot,fname,dateStr){
   const t=UI[lang];
   const prefix=slot===1?t.base1:t.base2;
   document.getElementById('lbl'+slot+'txt').textContent=prefix+': '+fname+' • '+dateStr;
   document.getElementById('l'+slot).classList.add('loaded');
-  if(slot===1) fileDate1=dateStr;
-  else fileDate2=dateStr;
+  if(slot===1) fileDate1=dateStr; else fileDate2=dateStr;
 }
 
 /* ================================================
@@ -326,7 +459,10 @@ function updateFileLabel(slot, fname, dateStr){
 function processJson(json,slot){
   const list=Array.isArray(json)?json:(json.data||json.items||[]);
   if(slot===1){
-    raw.clear(); oldKeys.clear(); newKeys.clear(); historyMap.clear(); base2Loaded=false;
+    raw.clear(); oldKeys.clear(); newKeys.clear();
+    historyMap.clear(); licenseHistory.clear();
+    vehicleExtra.clear(); driverMap.clear();
+    base2Loaded=false;
   }
 
   list.forEach(item=>{
@@ -346,8 +482,8 @@ function processJson(json,slot){
           const ex=raw.get(e.reg);
           ex.drivers.add(e.driver);
           if(e.validTo>ex.validTo) ex.validTo=e.validTo;
-          if(!ex.op||ex.op==="ДРУГИ") ex.op=e.op;
-          if(!ex.model||ex.model==="—") ex.model=e.model;
+          if(!ex.op||ex.op==='ДРУГИ') ex.op=e.op;
+          if(!ex.model||ex.model==='—') ex.model=e.model;
         }
       } else {
         base2Loaded=true;
@@ -361,8 +497,8 @@ function processJson(json,slot){
           const ex=raw.get(e.reg);
           ex.drivers.add(e.driver);
           if(e.validTo>ex.validTo) ex.validTo=e.validTo;
-          if(!ex.op||ex.op==="ДРУГИ") ex.op=e.op;
-          if(!ex.model||ex.model==="—") ex.model=e.model;
+          if(!ex.op||ex.op==='ДРУГИ') ex.op=e.op;
+          if(!ex.model||ex.model==='—') ex.model=e.model;
           if(isNewFlag) ex.isNew=true;
           ex.isGone=false;
         }
@@ -371,11 +507,9 @@ function processJson(json,slot){
   });
 
   if(slot===2){
-    if(oldKeys.size){
-      oldKeys.forEach(reg=>{
-        if(!newKeys.has(reg)&&raw.has(reg)) raw.get(reg).isGone=true;
-      });
-    }
+    if(oldKeys.size) oldKeys.forEach(reg=>{
+      if(!newKeys.has(reg)&&raw.has(reg)) raw.get(reg).isGone=true;
+    });
     historyMap.forEach((h,reg)=>{
       if(h.slot1&&h.slot2&&h.slot1.op!==h.slot2.op&&raw.has(reg)){
         raw.get(reg).isMigrated=true;
@@ -384,33 +518,53 @@ function processJson(json,slot){
     });
   }
 
+  // Sort license history per vehicle newest first
+  licenseHistory.forEach(arr=>arr.sort((a,b)=>(b.validTo||new Date(0))-(a.validTo||new Date(0))));
+
+  // Populate municipality filter
+  buildMuniFilter();
+  // Show/hide UVLTA chip
+  const anyUvlta=Array.from(driverMap.values()).some(ds=>ds.some(d=>d.uvltaEndDate&&d.uvltaEndDate<todayStart));
+  document.getElementById('fltUvltaWrap').style.display=anyUvlta?'flex':'none';
+
   apply();
+}
+
+/* ================================================
+   MUNICIPALITY FILTER BUILD
+================================================ */
+function buildMuniFilter(){
+  const sel=document.getElementById('fltMuni');
+  const munis=new Set();
+  vehicleExtra.forEach(v=>{ if(v.muni) munis.add(v.muni); });
+  const sorted=[...munis].sort((a,b)=>a.localeCompare(b,'bg'));
+  const cur=sel.value;
+  sel.innerHTML='<option value="">—</option>';
+  sorted.forEach(m=>{
+    const o=document.createElement('option');
+    o.value=m; o.textContent=m;
+    if(m===cur) o.selected=true;
+    sel.appendChild(o);
+  });
 }
 
 /* ================================================
    AUTO-FETCH FROM GITHUB
 ================================================ */
 async function autoFetch(url,slot){
-  try {
-    console.log('[AF'+slot+'] fetch:', url);
+  try{
     const res=await fetch(url);
-    if(!res.ok){console.warn('[AF'+slot+'] HTTP',res.status);return false;}
+    if(!res.ok) return false;
     const lastMod=res.headers.get('Last-Modified');
-    const text=await res.text();
-    const json=JSON.parse(text);
+    const json=JSON.parse(await res.text());
     processJson(json,slot);
     const fname=url.split('/').pop();
     const dateStr=lastMod?formatDate(new Date(lastMod)):formatDate(new Date());
     updateFileLabel(slot,fname,dateStr);
-    if(slot===2||!document.getElementById('l2').classList.contains('loaded')){
+    if(slot===2||!document.getElementById('l2').classList.contains('loaded'))
       document.getElementById('jsonDate').textContent=dateStr;
-    }
-    console.log('[AF'+slot+'] OK raw.size=',raw.size,'base2Loaded=',base2Loaded);
     return true;
-  } catch(e){
-    console.error('[AF'+slot+'] ERROR:',e.message);
-    return false;
-  }
+  }catch(e){ console.error('[AF'+slot+']',e.message); return false; }
 }
 
 (async()=>{
@@ -422,16 +576,55 @@ async function autoFetch(url,slot){
 })();
 
 /* ================================================
+   FILTER HELPERS
+================================================ */
+function carPassesFilters(c){
+  const ownership=document.getElementById('fltOwnership').value;
+  const muni=document.getElementById('fltMuni').value;
+  const age=document.getElementById('fltAge').value;
+
+  if(ownership){
+    const ex=vehicleExtra.get(c.reg);
+    if(!ex||!ex.ownership.includes(ownership)) return false;
+  }
+  if(muni){
+    const ex=vehicleExtra.get(c.reg);
+    if(!ex||ex.muni!==muni) return false;
+  }
+  if(age){
+    const ex=vehicleExtra.get(c.reg);
+    const yrs=ex?carAgeYears(ex.firstRegDate):null;
+    if(yrs===null) return false;
+    if(age==='old'&&yrs<=15) return false;
+    if(age==='mid'&&(yrs<7||yrs>15)) return false;
+    if(age==='new'&&yrs>=7) return false;
+  }
+  if(fltUvltaOn){
+    const ds=driverMap.get(c.reg);
+    if(!ds||!ds.some(d=>d.uvltaEndDate&&d.uvltaEndDate<todayStart)) return false;
+  }
+  return true;
+}
+
+function toggleUvlta(){
+  fltUvltaOn=!fltUvltaOn;
+  document.getElementById('fltUvlta').classList.toggle('on',fltUvltaOn);
+  apply();
+}
+
+/* ================================================
    FILTER MODES
 ================================================ */
 function setMode(m){
   fMode=m;
-  document.querySelectorAll('.stat-item').forEach(x=>{x.classList.remove('active');x.classList.remove('active-mig');});
-  const ids={all:'fAll',active:'fAct',expired:'fExp',new:'fNew',gone:'fGone',migration:'fMig'};
-  const cls=m==='migration'?'active-mig':'active';
+  document.querySelectorAll('.stat-item').forEach(x=>{
+    x.classList.remove('active','active-mig','active-exp');
+  });
+  const ids={all:'fAll',active:'fAct',expired:'fExp',soon:'fSoon',new:'fNew',gone:'fGone',migration:'fMig'};
+  const cls=m==='migration'?'active-mig':(m==='soon'?'active-exp':'active');
   if(ids[m]) document.getElementById(ids[m]).classList.add(cls);
   document.getElementById('firmsWrapper').style.display=(m==='migration')?'none':'flex';
-  selOp='';
+  selOp=''; selMigKey=null;
   apply();
 }
 
@@ -441,12 +634,13 @@ function setMode(m){
 function rebuildFirms(carsInScope){
   const map={};
   carsInScope.forEach(c=>{
-    const op=c.op||"ДРУГИ";
-    if(!map[op]) map[op]={cars:0,drivers:0,new:0,gone:0};
+    const op=c.op||'ДРУГИ';
+    if(!map[op]) map[op]={cars:0,drivers:0,new:0,gone:0,mig:0};
     map[op].cars++;
     map[op].drivers+=c.drivers.size;
-    if(c.isNew) map[op].new++;
-    if(c.isGone) map[op].gone++;
+    if(c.isNew)      map[op].new++;
+    if(c.isGone)     map[op].gone++;
+    if(c.isMigrated) map[op].mig++;
   });
   const sorted=Object.entries(map).sort((a,b)=>b[1].cars-a[1].cars).slice(0,25);
   const grid=document.getElementById('firmsGrid');
@@ -458,9 +652,9 @@ function rebuildFirms(carsInScope){
         <span class="mDrv">👤${s.drivers}</span>
         ${s.new?`<span class="mNew">★${s.new}</span>`:''}
         ${s.gone?`<span class="mExp">↩${s.gone}</span>`:''}
+        ${s.mig?`<span class="mMig">⇄${s.mig}</span>`:''}
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
   grid.querySelectorAll('.firm-tag').forEach(el=>{
     el.addEventListener('click',()=>{
       const op=el.getAttribute('data-op')||'';
@@ -471,7 +665,7 @@ function rebuildFirms(carsInScope){
 }
 
 /* ================================================
-   APPLY — search + mode + firms
+   APPLY
 ================================================ */
 function apply(){
   const q=(document.getElementById('search').value||'').toLowerCase().trim();
@@ -482,10 +676,12 @@ function apply(){
   const newAll  =all.filter(c=>c.isNew).length;
   const goneAll =all.filter(c=>c.isGone).length;
   const migAll  =all.filter(c=>c.isMigrated).length;
+  const soonAll =all.filter(c=>isExpiringSoon(c.validTo)&&!c.isGone).length;
 
   document.getElementById('sAll').textContent  =raw.size-goneAll;
   document.getElementById('sAct').textContent  =actAll;
   document.getElementById('sExp').textContent  =expAll;
+  document.getElementById('sSoon').textContent =soonAll;
   document.getElementById('sNew').textContent  =newAll;
   document.getElementById('sGone').textContent =goneAll;
   document.getElementById('sMig').textContent  =migAll;
@@ -493,7 +689,7 @@ function apply(){
   const dim=!base2Loaded?'0.35':'1';
   ['fNew','fGone','fMig'].forEach(id=>document.getElementById(id).style.opacity=dim);
 
-  // search — supports both BG and transliterated EN
+  // search
   const base=all.filter(c=>{
     if(!q) return true;
     const blob=(c.reg+' '+c.op+' '+c.model+' '+Array.from(c.drivers).join(' ')).toLowerCase();
@@ -501,43 +697,54 @@ function apply(){
     return blob.includes(q)||enBlob.includes(q);
   });
 
+  // mode
   const inMode=base.filter(c=>{
     if(fMode==='active')    return isActive(c.validTo)&&!c.isGone;
     if(fMode==='expired')   return !isActive(c.validTo)&&!c.isGone;
+    if(fMode==='soon')      return isExpiringSoon(c.validTo)&&!c.isGone;
     if(fMode==='new')       return c.isNew;
     if(fMode==='gone')      return c.isGone;
     if(fMode==='migration') return c.isMigrated;
     return !c.isGone;
   });
 
+  // extra filters
+  const afterFilters=inMode.filter(carPassesFilters);
+
   if(fMode!=='migration'){
-    rebuildFirms(inMode);
-    filtered=selOp?inMode.filter(c=>c.op===selOp):inMode;
+    rebuildFirms(afterFilters);
+    filtered=selOp?afterFilters.filter(c=>c.op===selOp):afterFilters;
     document.getElementById('navBar').style.display='flex';
   } else {
-    filtered=inMode;
+    filtered=afterFilters;
     document.getElementById('navBar').style.display='none';
   }
 
+  document.getElementById('fltCount').textContent=filtered.length+' / '+(raw.size-goneAll);
   page=1;
   render();
 }
 
 /* ================================================
-   RENDER LIST / MIGRATION MATRIX
+   RENDER
 ================================================ */
 function render(){
   const listContent=document.getElementById('listContent');
   const t=UI[lang];
 
+  // Migration matrix
   if(fMode==='migration'&&!document.getElementById('search').value){
     const migStats={};
+    // build per-key car list too
+    const migCars={};
     filtered.forEach(c=>{
       const h=historyMap.get(c.reg);
       if(h&&h.slot1&&h.slot2){
-        const key=`${h.slot1.op}➔${h.slot2.op}`;
+        const key=h.slot1.op+'➔'+h.slot2.op;
         if(!migStats[key]) migStats[key]={from:h.slot1.op,to:h.slot2.op,count:0};
         migStats[key].count++;
+        if(!migCars[key]) migCars[key]=[];
+        migCars[key].push(c);
       }
     });
     const sortedMig=Object.values(migStats).sort((a,b)=>b.count-a.count);
@@ -545,24 +752,70 @@ function render(){
       listContent.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted);">${t.noMig}</div>`;
       return;
     }
+
+    const renderMigCars=(cars)=>{
+      return `<div style="display:flex;flex-direction:column;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);">`
+        +cars.map(c=>{
+          const act=isActive(c.validTo);
+          const soon=isExpiringSoon(c.validTo);
+          const border=act?(soon?'var(--highlight)':'var(--accent)'):'var(--red)';
+          const tagClass=act?(soon?'v-warn':'v-ok'):'v-err';
+          const tagText=act?(soon?t.expSoon:t.valid):t.expired_on;
+          const dList=Array.from(c.drivers).join(', ')||'—';
+          const ex=vehicleExtra.get(c.reg);
+          const yrs=ex?carAgeYears(ex.firstRegDate):null;
+          const isSel=selectedReg===c.reg?'selected-card':'';
+          return `<div class="car-card ${isSel}" style="border-left:6px solid ${border};margin:0" onclick="showDetails('${c.reg}')">
+            <div class="v-tag ${tagClass}" style="font-size:9px;">${tagText} ${c.validTo.toLocaleDateString('bg-BG')}</div>
+            <div style="margin-bottom:4px;">
+              <span class="plate" style="font-size:15px;">${safeText(c.reg)}</span>
+              <span style="font-size:13px;margin-left:8px;color:var(--muted);font-weight:700;">${display(c.model)}</span>
+              ${yrs&&yrs>15?`<span class="ctag ctag-old" style="margin-left:6px;">${yrs}г.</span>`:''}
+            </div>
+            <div class="drivers" style="font-size:11px;">👤 ${display(dList)}</div>
+          </div>`;
+        }).join('')
+        +`</div>`;
+    };
+
     listContent.innerHTML=`<div style="font-size:13px;font-weight:bold;color:var(--blue);margin-bottom:6px;padding:4px;">${t.topTransfers}</div>`
-      +sortedMig.map(m=>`
-      <div class="migration-row">
-        <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;">
-          <span style="font-size:11px;color:var(--muted);font-weight:bold;">${t.from}: ${display(m.from)}</span>
-          <span style="color:var(--blue);font-weight:bold;">⬇</span>
-          <span style="font-size:13px;font-weight:bold;">${t.to}: ${display(m.to)}</span>
-        </div>
-        <div class="mig-count">${m.count} ${t.pcs}</div>
-      </div>`).join('');
+      +sortedMig.map(m=>{
+        const key=m.from+'➔'+m.to;
+        const isOpen=selMigKey===key;
+        const cars=migCars[key]||[];
+        return `<div class="migration-row" style="flex-direction:column;align-items:stretch;cursor:pointer;${isOpen?'border-color:var(--blue);background:rgba(59,130,246,0.05);':''}" data-migkey="${safeText(key)}">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+            <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;">
+              <span style="font-size:11px;color:var(--muted);font-weight:bold;">${t.from}: ${display(m.from)}</span>
+              <span style="color:var(--blue);font-weight:bold;">⬇</span>
+              <span style="font-size:13px;font-weight:bold;">${t.to}: ${display(m.to)}</span>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+              <div class="mig-count" style="${isOpen?'background:var(--highlight);color:#000;':''}">${m.count} ${t.pcs}</div>
+              <span style="font-size:16px;color:var(--blue);font-weight:900;">${isOpen?'▲':'▼'}</span>
+            </div>
+          </div>
+          ${isOpen?renderMigCars(cars):''}
+        </div>`;
+      }).join('');
+
+    // attach click handlers
+    listContent.querySelectorAll('.migration-row').forEach(el=>{
+      el.addEventListener('click', e=>{
+        // don't toggle when clicking a car card inside
+        if(e.target.closest('.car-card')) return;
+        const key=el.getAttribute('data-migkey');
+        selMigKey=(selMigKey===key)?null:key;
+        render();
+      });
+    });
     return;
   }
 
   const totalPages=Math.ceil(filtered.length/pageSize)||1;
   if(page>totalPages) page=totalPages;
   const start=(page-1)*pageSize;
-  const slice=fMode==='migration'?filtered:filtered.slice(start,start+pageSize);
-
+  const slice=filtered.slice(start,start+pageSize);
   document.getElementById('pgInfo').textContent=`${page} / ${totalPages}`;
 
   if(!slice.length){
@@ -572,24 +825,45 @@ function render(){
 
   listContent.innerHTML=slice.map((c,i)=>{
     const act=isActive(c.validTo);
-    const border=c.isGone?'var(--orange)':(c.isMigrated?'var(--blue)':(c.isNew?'var(--highlight)':(act?'var(--accent)':'var(--red)')));
-    const tagClass=act?'v-ok':'v-err';
-    const tagText=act?t.valid:t.expired_on;
+    const soon=isExpiringSoon(c.validTo);
+    const border=c.isGone?'var(--orange)':(c.isMigrated?'var(--blue)':(c.isNew?'var(--highlight)':(soon?'var(--highlight)':(act?'var(--accent)':'var(--red)'))));
+    const tagClass=act?(soon?'v-warn':'v-ok'):'v-err';
+    const tagText=act?(soon?t.expSoon:t.valid):t.expired_on;
     const dList=Array.from(c.drivers).join(', ')||'—';
     const isSel=selectedReg===c.reg?'selected-card':'';
-    return `
-      <div class="car-card ${isSel}" style="border-left:8px solid ${border}" onclick="showDetails('${c.reg}')">
-        <div class="v-tag ${tagClass}">${tagText} ${c.validTo.toLocaleDateString('bg-BG')}</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:900;">#${start+i+1} | ${display(c.op)}</div>
-        <div style="margin-bottom:5px;">
-          <span class="plate">${safeText(c.reg)}</span>
-          <span style="font-size:15px;margin-left:10px;color:var(--muted);font-weight:900;">${display(c.model)}</span>
-          ${c.isNew?`<span style="margin-left:8px;color:var(--highlight);font-weight:900;font-size:12px;">${t.isNew}</span>`:''}
-          ${c.isGone?`<span style="margin-left:8px;color:var(--orange);font-weight:900;font-size:12px;">${t.isGone}</span>`:''}
-          ${c.isMigrated?`<span style="margin-left:8px;color:var(--blue);font-weight:900;font-size:12px;">⇄ ${t.migrated}</span>`:''}
-        </div>
-        <div class="drivers">👤 ${display(dList)}</div>
-      </div>`;
+
+    // Extra tags for list cards
+    const ex=vehicleExtra.get(c.reg);
+    const tags=[];
+    if(ex){
+      if(ex.ownership&&ex.ownership!=='няма данни'&&ex.ownership!=='нняма'){
+        const owLabel={'собствено':t.ownSelf,'лизинг':t.ownLease,'наем':t.ownRent,'друго':t.ownOther};
+        const lbl=owLabel[ex.ownership]||ex.ownership;
+        if(lbl) tags.push(`<span class="ctag ctag-liz">${lbl}</span>`);
+      }
+      const yrs=carAgeYears(ex.firstRegDate);
+      if(yrs!==null&&yrs>15) tags.push(`<span class="ctag ctag-old">${yrs}г.</span>`);
+      if(ex.muni&&!ex.muni.includes('Столична')) tags.push(`<span class="ctag ctag-muni">${ex.muni.replace('Община ','')}</span>`);
+    }
+    // UVLTA check
+    const ds=driverMap.get(c.reg);
+    if(ds&&ds.some(d=>d.uvltaEndDate&&d.uvltaEndDate<todayStart))
+      tags.push(`<span class="ctag ctag-uvlta">⚠ UVLTA</span>`);
+    if(soon) tags.push(`<span class="ctag ctag-soon">⏰ ${t.expSoon}</span>`);
+
+    return `<div class="car-card ${isSel}" style="border-left:8px solid ${border}" onclick="showDetails('${c.reg}')">
+      <div class="v-tag ${tagClass}">${tagText} ${c.validTo.toLocaleDateString('bg-BG')}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:900;">#${start+i+1} | ${display(c.op)}</div>
+      <div style="margin-bottom:5px;">
+        <span class="plate">${safeText(c.reg)}</span>
+        <span style="font-size:14px;margin-left:10px;color:var(--muted);font-weight:900;">${display(c.model)}</span>
+        ${c.isNew?`<span style="margin-left:8px;color:var(--highlight);font-weight:900;font-size:12px;">${t.isNew}</span>`:''}
+        ${c.isGone?`<span style="margin-left:8px;color:var(--orange);font-weight:900;font-size:12px;">${t.isGone}</span>`:''}
+        ${c.isMigrated?`<span style="margin-left:8px;color:var(--blue);font-weight:900;font-size:12px;">⇄ ${t.migrated}</span>`:''}
+      </div>
+      <div class="drivers">👤 ${display(dList)}</div>
+      ${tags.length?`<div class="car-tags">${tags.join('')}</div>`:''}
+    </div>`;
   }).join('');
 
   document.getElementById('prevBtn').disabled=(page<=1);
@@ -599,11 +873,7 @@ function render(){
 function pageNav(delta){
   const totalPages=Math.ceil(filtered.length/pageSize)||1;
   const next=page+delta;
-  if(next>=1&&next<=totalPages){
-    page=next;
-    render();
-    document.getElementById('listContent').scrollTop=0;
-  }
+  if(next>=1&&next<=totalPages){ page=next; render(); document.getElementById('listContent').scrollTop=0; }
 }
 
 /* ================================================
@@ -616,18 +886,84 @@ window.showDetails=function(reg){
   if(el) el.classList.add('selected-card');
   const c=raw.get(reg);
   if(!c) return;
+  const t=UI[lang];
+  const ex=vehicleExtra.get(reg)||{};
+  const ds=driverMap.get(reg)||[];
+
   document.getElementById('detailsPlaceholder').style.display='none';
   document.getElementById('detailsActual').style.display='flex';
   document.getElementById('dPlate').textContent=c.reg;
   document.getElementById('dModel').textContent=display(c.model);
-  document.getElementById('dOp').textContent=display(c.op);
-  const act=isActive(c.validTo);
-  const statusEl=document.getElementById('dStatus');
-  const t=UI[lang];
-  statusEl.textContent=act?`${t.valid} ${c.validTo.toLocaleDateString('bg-BG')}`:`${t.expired_on} ${c.validTo.toLocaleDateString('bg-BG')}`;
-  statusEl.style.color=act?'var(--accent)':'var(--red)';
-  document.getElementById('dDrivers').textContent=Array.from(c.drivers).map(d=>display(d)).join('\n')||'—';
 
+  // Car age
+  const yrs=carAgeYears(ex.firstRegDate);
+  const ageEl=document.getElementById('dCarAge');
+  if(yrs!==null&&ex.firstRegDate){
+    ageEl.textContent=`${t.firstReg}: ${ex.firstRegDate.getFullYear()} (${yrs} ${t.yearsOld})`;
+    ageEl.style.color=yrs>15?'var(--orange)':yrs>10?'var(--highlight)':'var(--muted)';
+  } else { ageEl.textContent=''; }
+
+  // Operator + municipality
+  document.getElementById('dOp').textContent=display(c.op);
+  const muniEl=document.getElementById('dMuni');
+  if(ex.muni){ muniEl.textContent='📍 '+display(ex.muni); muniEl.style.display='block'; }
+  else { muniEl.style.display='none'; }
+
+  // Status
+  const act=isActive(c.validTo);
+  const soon=isExpiringSoon(c.validTo);
+  const statusEl=document.getElementById('dStatus');
+  const statusText=act?(soon?t.expSoon:t.valid):t.expired_on;
+  statusEl.textContent=statusText+' '+c.validTo.toLocaleDateString('bg-BG');
+  statusEl.style.color=act?(soon?'var(--highlight)':'var(--accent)'):'var(--red)';
+
+  // Ownership
+  const owEl=document.getElementById('dOwnership');
+  if(ex.ownership&&ex.ownership!=='няма данни'&&ex.ownership!=='нняма'){
+    const owLabel={'собствено':t.ownSelf,'лизинг':t.ownLease,'наем':t.ownRent,'друго':t.ownOther};
+    owEl.textContent=t.ownership+': '+(owLabel[ex.ownership]||ex.ownership);
+    owEl.style.display='block';
+  } else { owEl.style.display='none'; }
+
+  // License number (operator)
+  const licEl=document.getElementById('dLicNum');
+  if(ex.opLicNum){ licEl.textContent=t.opLicNum+': '+ex.opLicNum; licEl.style.display='block'; }
+  else { licEl.style.display='none'; }
+
+  // Drivers with UVLTA info
+  const driversSect=document.getElementById('dDrivers');
+  if(ds.length){
+    driversSect.innerHTML=ds.map(d=>{
+      const uvltaExpired=d.uvltaEndDate&&d.uvltaEndDate<todayStart;
+      const uvltaOk=d.uvltaEndDate&&d.uvltaEndDate>=todayStart;
+      const uvltaStr=d.uvltaEndDate?` <span style="font-size:10px;padding:1px 4px;border-radius:3px;${uvltaExpired?'background:rgba(239,68,68,0.2);color:var(--red)':'background:rgba(34,197,94,0.15);color:var(--accent)'}">UVLTA ${uvltaExpired?'⚠ '+t.expired_short:formatDate(d.uvltaEndDate)}</span>`:'';
+      return `<div style="padding:3px 0;border-bottom:1px solid var(--line)">👤 ${display(d.name)}${uvltaStr}</div>`;
+    }).join('');
+  } else {
+    driversSect.innerHTML=Array.from(c.drivers).map(d=>`<div style="padding:3px 0;">👤 ${display(d)}</div>`).join('')||'—';
+  }
+
+  // Full license history
+  const licHist=licenseHistory.get(reg)||[];
+  const licHistSect=document.getElementById('dLicHistSection');
+  const licHistEl=document.getElementById('dLicHist');
+  if(licHist.length>1){
+    licHistSect.style.display='block';
+    licHistEl.innerHTML=licHist.slice(0,8).map(h=>{
+      const ok=isActive(h.validTo);
+      const s=isExpiringSoon(h.validTo);
+      const cls=ok?(s?'lic-soon':'lic-ok'):'lic-exp';
+      const vf=h.validFrom?h.validFrom.toLocaleDateString('bg-BG'):'?';
+      const vt=h.validTo?h.validTo.toLocaleDateString('bg-BG'):'?';
+      return `<div class="lic-row ${cls}">
+        <span class="lic-num">${h.licenseNumber||'—'}</span>
+        <span class="lic-dates">${vf} → ${vt}</span>
+      </div>`;
+    }).join('');
+    if(licHist.length>8) licHistEl.innerHTML+=`<div style="font-size:11px;color:var(--muted);text-align:center;margin-top:4px;">+${licHist.length-8} ${t.moreRecords}</div>`;
+  } else { licHistSect.style.display='none'; }
+
+  // Migration timeline
   const hist=historyMap.get(reg);
   const timeline=document.getElementById('dTimeline');
   timeline.innerHTML='';
@@ -654,7 +990,7 @@ window.showDetails=function(reg){
           ${migNode?`<span style="font-size:10px;background:var(--blue);color:#fff;padding:1px 4px;border-radius:3px;margin-left:4px;">${t.newFirm}</span>`:''}
         </div></div>`;
     } else {
-      timeline.innerHTML+=`<div class="timeline-item" style="border-left-color:var(--orange);">
+      timeline.innerHTML+=`<div class="timeline-item gone-node" style="border-left-color:var(--orange);">
         <div class="timeline-date" style="color:var(--orange);">${t.base2} (${d2})</div>
         <div class="timeline-firm" style="color:var(--orange);font-style:italic;">${t.dropped}</div></div>`;
     }
@@ -662,7 +998,7 @@ window.showDetails=function(reg){
 };
 
 /* ================================================
-   FIRMS TOGGLE (3-state)
+   FIRMS TOGGLE
 ================================================ */
 let firmsExpanded=false, firmsVisible=true;
 function toggleFirms(){
@@ -670,53 +1006,21 @@ function toggleFirms(){
   const btn=document.getElementById('firmsToggle');
   const t=UI[lang];
   if(firmsVisible&&!firmsExpanded){
-    grid.classList.add('expanded');
-    btn.textContent=t.collapse;
-    firmsExpanded=true;
+    grid.classList.add('expanded'); btn.textContent=t.collapse; firmsExpanded=true;
   } else if(firmsVisible&&firmsExpanded){
-    grid.classList.remove('expanded');
-    grid.classList.add('collapsed');
-    btn.textContent=t.show;
-    firmsExpanded=false; firmsVisible=false;
+    grid.classList.remove('expanded'); grid.classList.add('collapsed');
+    btn.textContent=t.show; firmsExpanded=false; firmsVisible=false;
   } else {
-    grid.classList.remove('collapsed');
-    btn.textContent=t.expand;
-    firmsVisible=true;
+    grid.classList.remove('collapsed'); btn.textContent=t.expand; firmsVisible=true;
   }
 }
 
 /* ================================================
-   TRANSLITERATION BG → EN
+   TRANSLITERATION
 ================================================ */
-const TRANSLIT={
-  'А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ж':'Zh','З':'Z',
-  'И':'I','Й':'Y','К':'K','Л':'L','М':'M','Н':'N','О':'O','П':'P',
-  'Р':'R','С':'S','Т':'T','У':'U','Ф':'F','Х':'H','Ц':'Ts','Ч':'Ch',
-  'Ш':'Sh','Щ':'Sht','Ъ':'A','Ь':'','Ю':'Yu','Я':'Ya',
-  'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ж':'zh','з':'z',
-  'и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p',
-  'р':'r','с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'ts','ч':'ch',
-  'ш':'sh','щ':'sht','ъ':'a','ь':'','ю':'yu','я':'ya'
-};
+const TRANSLIT={'А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ж':'Zh','З':'Z','И':'I','Й':'Y','К':'K','Л':'L','М':'M','Н':'N','О':'O','П':'P','Р':'R','С':'S','Т':'T','У':'U','Ф':'F','Х':'H','Ц':'Ts','Ч':'Ch','Ш':'Sh','Щ':'Sht','Ъ':'A','Ь':'','Ю':'Yu','Я':'Ya','а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'ts','ч':'ch','ш':'sh','щ':'sht','ъ':'a','ь':'','ю':'yu','я':'ya'};
 const LEGAL={'ЕООД':'LLC','ООД':'Ltd','АД':'JSC','ЕАД':'JSC','КД':'LP','ЕТ':'SE'};
-const BRANDS={
-  'PEZHO':'PEUGEOT','ПЕЖО':'PEUGEOT','SITROEN':'CITROËN','СИТРОЕН':'CITROËN',
-  'DACHIYA':'DACIA','ДАЧИЯ':'DACIA','FOLKSVAGEN':'VOLKSWAGEN','ФОЛКСВАГЕН':'VOLKSWAGEN',
-  'SHKODA':'ŠKODA','ШКОДА':'ŠKODA','RENO':'RENAULT','РЕНО':'RENAULT',
-  'SHEVROLET':'CHEVROLET','ШЕВРОЛЕТ':'CHEVROLET','MERSEDES':'MERCEDES','МЕРСЕДЕС':'MERCEDES',
-  'MITSIBISHI':'MITSUBISHI','МИЦУБИШИ':'MITSUBISHI','HYUNDAY':'HYUNDAI','HYONDAI':'HYUNDAI',
-  'NISAN':'NISSAN','НИСАН':'NISSAN','DZHIP':'JEEP','ДЖИП':'JEEP','BMV':'BMW',
-  'ЛАДА':'LADA','МАЗДА':'MAZDA','СУБАРУ':'SUBARU','СУЗУКИ':'SUZUKI','ФИАТ':'FIAT',
-  'TOYOYA':'TOYOTA','ТОЙОТА':'TOYOTA','ОПЕЛ':'OPEL','ФОРД':'FORD',
-  'ХОНДА':'HONDA','КИА':'KIA','ВОЛВО':'VOLVO','ПОРШЕ':'PORSCHE',
-  'OKTAVIYA':'OCTAVIA','OKTAVIA':'OCTAVIA','FABIYA':'FABIA',
-  'MEGAN':'MEGANE','KLIO':'CLIO','STENIK':'SCENIC','DASTER':'DUSTER',
-  'BERLINGO':'BERLINGO','LOGAN':'LOGAN','SANDERO':'SANDERO',
-  'KASHKAY':'QASHQAI','KASHKAI':'QASHQAI','КАШКАЙ':'QASHQAI',
-  'SVIFT':'SWIFT','SPRINTER':'SPRINTER','VIANO':'VIANO','VITO':'VITO',
-  'AUTLANDER':'OUTLANDER','АУТЛЕНДЕР':'OUTLANDER',
-  'O\' KEY':'OK','O" KEY':'OK'
-};
+const BRANDS={'ПЕЖО':'PEUGEOT','СИТРОЕН':'CITROËN','ДАЧИЯ':'DACIA','ФОЛКСВАГЕН':'VOLKSWAGEN','ШКОДА':'ŠKODA','РЕНО':'RENAULT','ШЕВРОЛЕТ':'CHEVROLET','МЕРСЕДЕС':'MERCEDES','МИЦУБИШИ':'MITSUBISHI','HYUNDAY':'HYUNDAI','HYONDAI':'HYUNDAI','НИСАН':'NISSAN','ДЖИП':'JEEP','BMV':'BMW','ЛАДА':'LADA','МАЗДА':'MAZDA','СУБАРУ':'SUBARU','СУЗУКИ':'SUZUKI','ФИАТ':'FIAT','ТОЙОТА':'TOYOTA','ОПЕЛ':'OPEL','ФОРД':'FORD','ХОНДА':'HONDA','КИА':'KIA','ВОЛВО':'VOLVO','ПОРШЕ':'PORSCHE','OKTAVIYA':'OCTAVIA','FABIYA':'FABIA','MEGAN':'MEGANE','KLIO':'CLIO','DASTER':'DUSTER','KASHKAY':'QASHQAI','KASHKAI':'QASHQAI','КАШКАЙ':'QASHQAI','SVIFT':'SWIFT','AUTLANDER':'OUTLANDER','АУТЛЕНДЕР':'OUTLANDER'};
 function translit(str){
   if(!str) return str;
   let s=str;
@@ -724,14 +1028,14 @@ function translit(str){
   Object.entries(BRANDS).forEach(([w,r])=>{ s=s.split(w).join(r); });
   s=s.replace(/[\u0400-\u04FF]+/g,word=>{
     const allUp=word===word.toUpperCase();
-    const titleCase=!allUp&&word[0]===word[0].toUpperCase();
+    const tc=!allUp&&word[0]===word[0].toUpperCase();
     let res='';
     for(const c of word){
       const lo=c.toLowerCase();
       const mapped=TRANSLIT[lo];
       if(mapped===undefined){res+=c;continue;}
       if(allUp) res+=mapped.toUpperCase();
-      else if(titleCase&&res==='') res+=mapped[0].toUpperCase()+mapped.slice(1);
+      else if(tc&&res==='') res+=mapped[0].toUpperCase()+mapped.slice(1);
       else res+=mapped;
     }
     return res;
@@ -745,8 +1049,8 @@ function translit(str){
 ================================================ */
 const UI={
   bg:{
-    total:'ОБЩО',valid:'ВАЛИДЕН ДО',expired_on:'ИЗТЕКЪЛ НА',
-    isNew:'★ НОВ',isGone:'↩ ТРЪГНАЛ',migrated:'МИГРИРАЛ',
+    total:'ОБЩО',valid:'ВАЛИДЕН ДО',expired_on:'ИЗТЕКЪЛ НА',expired_short:'изт.',
+    expSoon:'⏰ ИЗТИЧА',isNew:'★ НОВ',isGone:'↩ ТРЪГНАЛ',migrated:'МИГРИРАЛ',
     base1:'БАЗА 1',base2:'БАЗА 2',today:'Последна',notFound:'Липсва в регистъра',
     newFirm:'НОВА ФИРМА',dropped:'ОТПАДНАЛ',
     noResults:'Няма резултати.',noMig:'Няма открити трансфери.',
@@ -755,11 +1059,15 @@ const UI={
     expand:'▲ РАЗШИРИ',collapse:'▼ СКРИЙ',show:'▶ ПОКАЖИ',
     search:'Търсене по Рег. №, Фирма, Модел или Шофьор…',
     firmsTitle:'ТОП ОПЕРАТОРИ В СКОУПА',lang:'EN',
-    dtOp:'Текущ Оператор',dtStatus:'Статус на Разрешителното',dtDrivers:'Шофьори',dtTimeline:'Хронология & Миграция'
+    dtOp:'Текущ Оператор',dtStatus:'Статус на Разрешителното',
+    dtDrivers:'Шофьори',dtTimeline:'Хронология & Миграция',dtLicHist:'История на Лицензите',
+    ownership:'Собственост',opLicNum:'Лиценз оператор',
+    ownSelf:'Собствено',ownLease:'Лизинг',ownRent:'Наем',ownOther:'Друго',
+    firstReg:'Първа рег.',yearsOld:'г.',moreRecords:'записа'
   },
   en:{
-    total:'TOTAL',valid:'VALID TO',expired_on:'EXPIRED ON',
-    isNew:'★ NEW',isGone:'↩ LEFT',migrated:'MIGRATED',
+    total:'TOTAL',valid:'VALID TO',expired_on:'EXPIRED ON',expired_short:'exp.',
+    expSoon:'⏰ EXPIRING',isNew:'★ NEW',isGone:'↩ LEFT',migrated:'MIGRATED',
     base1:'DB 1',base2:'DB 2',today:'Latest',notFound:'Not in registry',
     newFirm:'NEW FIRM',dropped:'DROPPED',
     noResults:'No results.',noMig:'No transfers found.',
@@ -768,14 +1076,17 @@ const UI={
     expand:'▲ EXPAND',collapse:'▼ COLLAPSE',show:'▶ SHOW',
     search:'Search by Plate, Company, Model or Driver…',
     firmsTitle:'TOP OPERATORS IN SCOPE',lang:'БГ',
-    dtOp:'Current Operator',dtStatus:'License Status',dtDrivers:'Drivers',dtTimeline:'Timeline & Migration'
+    dtOp:'Current Operator',dtStatus:'License Status',
+    dtDrivers:'Drivers',dtTimeline:'Timeline & Migration',dtLicHist:'License History',
+    ownership:'Ownership',opLicNum:'Operator license',
+    ownSelf:'Own',ownLease:'Leasing',ownRent:'Rental',ownOther:'Other',
+    firstReg:'First reg.',yearsOld:'y.',moreRecords:'records'
   }
 };
 
 function toggleLang(){
   lang=lang==='bg'?'en':'bg';
-  applyLang();
-  apply();
+  applyLang(); apply();
   if(selectedReg) showDetails(selectedReg);
 }
 
@@ -792,7 +1103,7 @@ function applyLang(){
   document.getElementById('dtStatus').textContent=t.dtStatus;
   document.getElementById('dtDrivers').textContent=t.dtDrivers;
   document.getElementById('dtTimeline').textContent=t.dtTimeline;
-  // Update file labels (swap BG/EN prefix only if loaded)
+  document.getElementById('dtLicHist').textContent=t.dtLicHist;
   ['1','2'].forEach(n=>{
     const lbl=document.getElementById('l'+n);
     const span=document.getElementById('lbl'+n+'txt');
@@ -802,7 +1113,6 @@ function applyLang(){
     const rest=cur.replace(/^(БАЗА|DB)\s*[12]:\s*/,'').replace(/^(БАЗА|DB)\s*[12]/,'').trim();
     span.textContent=lbl.classList.contains('loaded')?prefix+': '+rest:prefix;
   });
-  // Update firms toggle button text
   const btn=document.getElementById('firmsToggle');
   if(!firmsVisible) btn.textContent=t.show;
   else if(firmsExpanded) btn.textContent=t.collapse;
@@ -814,15 +1124,12 @@ function applyLang(){
 ================================================ */
 function updateClock(){
   const now=new Date();
-  const h=String(now.getHours()).padStart(2,'0');
-  const m=String(now.getMinutes()).padStart(2,'0');
-  document.getElementById('liveClock').textContent=now.toLocaleDateString('bg-BG')+' '+h+':'+m;
+  document.getElementById('liveClock').textContent=now.toLocaleDateString('bg-BG')+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
 }
-updateClock();
-setInterval(updateClock,10000);
+updateClock(); setInterval(updateClock,10000);
 
 /* ================================================
-   EVENT LISTENERS
+   EVENTS
 ================================================ */
 document.getElementById('file1').addEventListener('change',e=>loadFile(e.target.files[0],1));
 document.getElementById('file2').addEventListener('change',e=>loadFile(e.target.files[0],2));
@@ -832,6 +1139,7 @@ document.getElementById('nextBtn').addEventListener('click',()=>pageNav(1));
 document.getElementById('fAll').addEventListener('click',()=>setMode('all'));
 document.getElementById('fAct').addEventListener('click',()=>setMode('active'));
 document.getElementById('fExp').addEventListener('click',()=>setMode('expired'));
+document.getElementById('fSoon').addEventListener('click',()=>setMode('soon'));
 document.getElementById('fNew').addEventListener('click',()=>{if(base2Loaded)setMode('new');});
 document.getElementById('fGone').addEventListener('click',()=>{if(base2Loaded)setMode('gone');});
 document.getElementById('fMig').addEventListener('click',()=>{if(base2Loaded)setMode('migration');});
