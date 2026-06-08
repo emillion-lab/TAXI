@@ -3,344 +3,383 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>TaxiDB Pro BG</title>
+  <title>TaxiDB Pro v100 – София</title>
   <style>
     :root {
       --bg:#050910; --panel:#0f172a; --accent:#22c55e; --text:#f8fafc;
-      --muted:#94a3b8; --highlight:#facc15; --line:#1e293b; --blue:#3b82f6; --red:#ef4444;
+      --muted:#94a3b8; --highlight:#facc15; --line:#1e293b;
+      --blue:#3b82f6; --red:#ef4444; --orange:#f97316;
     }
     *{box-sizing:border-box;font-family:'Segoe UI',Roboto,sans-serif}
     body{margin:0;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
 
+    /* ── HEADER ── */
     header{background:#020617;border-bottom:2px solid var(--accent);padding:8px;flex-shrink:0}
-    .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-    .version{color:var(--accent);font-weight:900;font-size:16px}
-    .json-date{font-size:12px;color:var(--highlight);font-weight:900;border:2px solid var(--highlight);padding:4px 8px;border-radius:6px}
+    .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:6px;flex-wrap:wrap}
+    .version{color:var(--accent);font-weight:900;font-size:16px;white-space:nowrap}
+    .top-right{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .json-date{font-size:12px;color:var(--highlight);font-weight:900;border:2px solid var(--highlight);padding:4px 8px;border-radius:4px;background:rgba(250,204,21,0.1);white-space:nowrap}
+    #liveClock{font-size:12px;color:var(--muted);font-weight:700;white-space:nowrap}
+    #langBtn{background:none;border:1px solid var(--muted);color:var(--muted);border-radius:6px;font-size:11px;padding:3px 7px;cursor:pointer;font-weight:900}
+    #langBtn:hover{border-color:var(--accent);color:var(--accent)}
 
-    .stats-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px}
-    .stat-item{background:var(--panel);padding:10px 2px;border-radius:8px;text-align:center;border:1px solid var(--line);cursor:pointer;user-select:none}
-    .stat-item.active{border-color:var(--highlight);box-shadow:0 0 0 1px rgba(250,204,21,.35) inset}
-    .stat-val{display:block;font-weight:900;font-size:18px}
-    .stat-lab{font-size:10px;color:var(--muted);text-transform:uppercase;margin-top:2px;letter-spacing:.5px}
+    .io-zone{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .file-lbl{font-size:11px;font-weight:900;padding:5px 10px;background:var(--line);border-radius:4px;cursor:pointer;transition:0.2s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+    .file-lbl:hover{background:#334155}
+    .file-lbl.loaded{border:1px solid var(--accent);color:var(--accent)}
+    .file-lbl input{display:none}
+    #resetBtn{background:var(--red);border:none;color:#fff;border-radius:6px;font-weight:900;font-size:13px;padding:5px 12px;cursor:pointer}
 
-    .file-row{display:grid;grid-template-columns:1fr 1fr 80px;gap:10px;margin-bottom:10px}
-    .file-btn{background:#1e293b;border:2px dashed rgba(148,163,184,.6);border-radius:10px;height:50px;position:relative;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;cursor:pointer}
-    .file-btn input{position:absolute;opacity:0;width:100%;height:100%;cursor:pointer}
-    .file-btn.loaded{border:2px solid var(--accent);color:var(--accent);border-style:solid}
+    /* ── STATS ── */
+    .stats-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:6px}
+    .stat-item{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 2px;text-align:center;cursor:pointer;transition:0.2s}
+    .stat-item:hover{border-color:var(--muted)}
+    .stat-item.active{border-color:var(--accent);background:rgba(34,197,94,0.05)}
+    .stat-item.active-mig{border-color:var(--blue);background:rgba(59,130,246,0.05)}
+    .stat-val{font-size:18px;font-weight:900;display:block}
+    .stat-lbl{font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
 
-    /* Firms – ONE ROW each (single column) */
-    .firms-box{background:rgba(15,23,42,.95);border-bottom:2px solid rgba(34,197,94,.35);flex-shrink:0}
-    .firms-header{display:flex;justify-content:space-between;align-items:center;padding:4px 8px 0 8px}
-    .firms-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
-    .firms-toggle{background:none;border:1px solid rgba(148,163,184,.4);color:var(--muted);border-radius:6px;font-size:11px;padding:2px 8px;cursor:pointer;font-weight:700}
-    .firms-toggle:hover{border-color:var(--accent);color:var(--accent)}
-    #firmsGrid{max-height:152px;overflow-y:auto;display:grid;grid-template-columns:1fr;gap:5px;padding:6px 8px 8px 8px;transition:max-height .25s ease}
-    #firmsGrid.expanded{max-height:55vh}
-    .firm-tag{
-      background:#050910;padding:7px 10px;border-radius:10px;font-size:13px;
-      display:flex;justify-content:space-between;align-items:center;cursor:pointer;
-      border-left:5px solid var(--accent); gap:10px;
-    }
-    .firm-tag.selected{background:var(--accent);color:#000;font-weight:900}
-    .firm-name{
-      flex:1; min-width:0;
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-      font-weight:900;
-    }
-    .firm-metrics{
-      display:flex; gap:8px; font-family:monospace; font-weight:900; flex-shrink:0; font-size:12px;
-    }
-    .mCars{color:var(--accent)}
-    .mDrv{color:var(--blue)}
-    .mNew{color:var(--highlight)}
-    .mExp{color:var(--red)}
-    .firm-tag.selected .mCars,
-    .firm-tag.selected .mDrv,
-    .firm-tag.selected .mNew,
-    .firm-tag.selected .mExp { color:#000; }
+    /* ── SEARCH ── */
+    .search-container{padding:7px 8px;background:#020617;border-bottom:1px solid var(--line);flex-shrink:0}
+    .search-box{width:100%;padding:10px 14px;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--accent);color:#fff;border-radius:6px;font-size:14px;outline:none}
+    .search-box:focus{border-color:var(--accent)}
 
-    .search-box{
-      width:calc(100% - 16px);padding:14px;background:#000;color:#fff;border:2px solid var(--line);
-      border-radius:14px;font-size:18px;margin:10px 8px;border-left:6px solid var(--accent);outline:none
-    }
+    /* ── FIRMS ── */
+    .firms-wrapper{background:#020617;border-bottom:1px solid var(--line);padding:0 8px 6px 8px;flex-shrink:0;display:flex;flex-direction:column}
+    .firms-ctrl{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding-top:4px}
+    .firms-title{font-size:11px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+    .firms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:5px;max-height:42px;overflow:hidden;transition:max-height 0.2s ease-out}
+    .firms-grid.expanded{max-height:300px;overflow-y:auto}
+    .firms-grid.collapsed{display:none}
+    .firm-tag{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:4px 6px;cursor:pointer;transition:0.1s;display:flex;flex-direction:column;justify-content:space-between;border-left:4px solid var(--accent)}
+    .firm-tag:hover{border-color:var(--muted)}
+    .firm-tag.selected{border-color:var(--highlight);background:rgba(250,204,21,0.07)}
+    .firm-name{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+    .firm-metrics{display:flex;gap:6px;font-size:10px;margin-top:2px;font-weight:bold}
+    .mCars{color:var(--accent)} .mDrv{color:var(--blue)} .mNew{color:var(--highlight)} .mExp{color:var(--orange)}
+    .firm-tag.selected .mCars,.firm-tag.selected .mDrv,.firm-tag.selected .mNew,.firm-tag.selected .mExp{color:var(--text)}
+    .toggle-btn{background:var(--line);border:none;color:var(--text);font-size:10px;font-weight:900;padding:4px 8px;border-radius:4px;cursor:pointer}
 
-    #listContent{flex:1;overflow-y:auto;padding:0 8px 90px 8px;background:#000}
-    .car-card{background:#020617;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:7px;position:relative}
-    .plate{display:inline-block;background:#fff;color:#000;padding:1px 8px;border-radius:5px;font-family:monospace;font-weight:900;font-size:22px}
-    .v-tag{float:right;padding:4px 8px;border-radius:8px;font-size:13px;font-weight:900;border:2px solid}
-    .v-ok{color:var(--accent);border-color:var(--accent);background:rgba(34,197,94,0.12)}
-    .v-err{color:var(--red);border-color:var(--red);background:rgba(239,68,68,0.12)}
-    .drivers{color:var(--blue);font-size:16px;font-weight:900;margin-top:8px}
+    /* ── MAIN ── */
+    main{flex:1;display:flex;overflow:hidden;position:relative}
+    .list-side{flex:1;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--line)}
+    .list-scroll{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px}
 
-    footer{position:fixed;bottom:0;left:0;right:0;background:#020617;border-top:2px solid var(--accent);
-      display:flex;justify-content:space-between;align-items:center;height:85px;padding:0 14px;z-index:2000}
-    .nav-btn{background:var(--panel);border:2px solid rgba(34,197,94,.6);color:#fff;width:90px;height:60px;border-radius:18px;font-size:30px}
-    .mid{text-align:center}
-    #curCount{font-weight:900;font-size:34px;font-family:monospace}
-    #pgInfo{font-size:14px;color:var(--muted)}
+    /* ── CARDS ── */
+    .car-card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 12px;position:relative;cursor:pointer;transition:0.1s}
+    .car-card:hover{border-color:var(--muted)}
+    .car-card.selected-card{border-color:var(--highlight) !important;background:#1e293b}
+    .plate{font-family:monospace;font-size:18px;font-weight:900;background:#fff;color:#000;padding:2px 6px;border-radius:4px;display:inline-block;letter-spacing:0.5px}
+    .v-tag{position:absolute;top:10px;right:10px;font-size:10px;font-weight:900;padding:2px 6px;border-radius:4px}
+    .v-ok{background:rgba(34,197,94,0.15);color:var(--accent);border:1px solid var(--accent)}
+    .v-err{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid var(--red)}
+    .drivers{margin-top:6px;font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    /* ── MIGRATION ROWS ── */
+    .migration-row{display:flex;justify-content:space-between;background:var(--panel);border:1px solid var(--line);padding:10px;border-radius:6px;align-items:center;gap:10px}
+    .mig-count{background:var(--blue);color:#fff;padding:4px 10px;border-radius:4px;font-weight:bold;font-size:14px;flex-shrink:0}
+
+    /* ── DETAILS PANEL ── */
+    .details-side{width:340px;background:#020617;display:flex;flex-direction:column;overflow-y:auto;padding:12px;gap:10px;flex-shrink:0}
+    @media(max-width:800px){.details-side{display:none}}
+    .detail-section{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px}
+    .detail-title{font-size:11px;color:var(--muted);font-weight:900;text-transform:uppercase;margin-bottom:6px;letter-spacing:.4px}
+    .timeline{margin-top:6px;display:flex;flex-direction:column;gap:6px;padding-left:4px}
+    .timeline-item{border-left:2px solid var(--line);padding-left:12px;position:relative;padding-bottom:4px}
+    .timeline-item::before{content:'';position:absolute;left:-5px;top:4px;width:8px;height:8px;border-radius:50%;background:var(--muted)}
+    .timeline-item.active-node::before{background:var(--accent)}
+    .timeline-item.migrated-node::before{background:var(--blue)}
+    .timeline-date{font-size:11px;font-weight:bold;color:var(--muted)}
+    .timeline-firm{font-size:13px;font-weight:700;margin-top:2px}
+
+    /* ── NAV BAR ── */
+    .nav-bar{background:#020617;border-top:1px solid var(--line);padding:6px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+    .nav-btn{background:var(--panel);border:1px solid var(--line);color:#fff;padding:7px 16px;border-radius:4px;font-weight:700;cursor:pointer;user-select:none}
+    .nav-btn:disabled{opacity:0.25;cursor:not-allowed}
+    .nav-btn:not(:disabled):active{background:var(--line)}
   </style>
 </head>
 <body>
 
 <header>
   <div class="top-bar">
-    <div class="version" id="appTitle">TaxiDB Pro BG</div>
-    <div style="display:flex;align-items:center;gap:6px">
-      <button id="langBtn" onclick="toggleLang()" style="background:none;border:1px solid var(--muted);color:var(--muted);border-radius:6px;font-size:11px;padding:3px 7px;cursor:pointer;font-weight:900">EN</button>
-      <div id="liveClock" style="font-size:12px;color:var(--muted);font-weight:700"></div>
+    <div class="version" id="appTitle">TaxiDB Pro <span style="font-size:11px;color:var(--muted);font-weight:normal;">v100 | Миграционен Анализ</span></div>
+    <div class="top-right">
+      <button id="langBtn" onclick="toggleLang()">EN</button>
+      <div id="liveClock"></div>
       <div id="jsonDate" class="json-date">---</div>
+      <div class="io-zone">
+        <label class="file-lbl" id="l1">📂 <span id="lbl1txt">БАЗА 1</span><input type="file" id="file1" accept=".json"></label>
+        <label class="file-lbl" id="l2">📂 <span id="lbl2txt">БАЗА 2</span><input type="file" id="file2" accept=".json"></label>
+        <button id="resetBtn" onclick="location.reload()">RESET</button>
+      </div>
     </div>
   </div>
 
   <div class="stats-bar">
-    <div class="stat-item active" id="fAll"><span id="sAll" class="stat-val">0</span><span class="stat-lab" data-bg="ОБЩО" data-en="TOTAL">ОБЩО</span></div>
-    <div class="stat-item" id="fAct"><span id="sAct" class="stat-val" style="color:var(--accent)">0</span><span class="stat-lab" data-bg="АКТИВНИ" data-en="ACTIVE">АКТИВНИ</span></div>
-    <div class="stat-item" id="fExp"><span id="sExp" class="stat-val" style="color:var(--red)">0</span><span class="stat-lab" data-bg="ИЗТЕКЛИ" data-en="EXPIRED">ИЗТЕКЛИ</span></div>
-    <div class="stat-item" id="fNew"><span id="sNew" class="stat-val" style="color:var(--highlight)">0</span><span class="stat-lab" data-bg="НОВИ" data-en="NEW">НОВИ</span></div>
-    <div class="stat-item" id="fGone"><span id="sGone" class="stat-val" style="color:#f97316">0</span><span class="stat-lab" data-bg="ТРЪГНАЛИ" data-en="LEFT">ТРЪГНАЛИ</span></div>
-  </div>
-
-  <div class="file-row">
-    <label class="file-btn" id="l1">БАЗА 1 <input type="file" accept=".json" id="file1"></label>
-    <label class="file-btn" id="l2">БАЗА 2 <input type="file" accept=".json" id="file2"></label>
-    <button onclick="location.reload()" style="background:var(--red);border:none;color:#fff;border-radius:12px;font-weight:900;font-size:16px;" id="resetBtn">RESET</button>
+    <div class="stat-item active" id="fAll">
+      <span class="stat-val" id="sAll">0</span>
+      <span class="stat-lbl" data-bg="ОБЩО" data-en="TOTAL">ОБЩО</span>
+    </div>
+    <div class="stat-item" id="fAct">
+      <span class="stat-val" id="sAct" style="color:var(--accent)">0</span>
+      <span class="stat-lbl" data-bg="ВАЛИДНИ" data-en="VALID">ВАЛИДНИ</span>
+    </div>
+    <div class="stat-item" id="fExp">
+      <span class="stat-val" id="sExp" style="color:var(--red)">0</span>
+      <span class="stat-lbl" data-bg="ИЗТЕКЛИ" data-en="EXPIRED">ИЗТЕКЛИ</span>
+    </div>
+    <div class="stat-item" id="fNew">
+      <span class="stat-val" id="sNew" style="color:var(--highlight)">0</span>
+      <span class="stat-lbl" data-bg="★ НОВИ" data-en="★ NEW">★ НОВИ</span>
+    </div>
+    <div class="stat-item" id="fGone">
+      <span class="stat-val" id="sGone" style="color:var(--orange)">0</span>
+      <span class="stat-lbl" data-bg="↩ ТРЪГНАЛИ" data-en="↩ LEFT">↩ ТРЪГНАЛИ</span>
+    </div>
+    <div class="stat-item" id="fMig">
+      <span class="stat-val" id="sMig" style="color:var(--blue)">0</span>
+      <span class="stat-lbl" style="color:var(--blue)" data-bg="⇄ МИГРАЦИЯ" data-en="⇄ MIGRATED">⇄ МИГРАЦИЯ</span>
+    </div>
   </div>
 </header>
 
-<div class="firms-box">
-  <div class="firms-header">
-    <span class="firms-title" data-bg="ТОП ФИРМИ" data-en="TOP FIRMS" id="firmsTitle">ТОП ФИРМИ</span>
-    <button class="firms-toggle" id="firmsToggle" onclick="toggleFirms()">▼ РАЗШИРИ</button>
-  </div>
-  <div id="firmsGrid"></div>
+<div class="search-container">
+  <input type="text" class="search-box" id="search" placeholder="Търсене по Рег. №, Фирма, Модел или Шофьор…" />
 </div>
-<input type="text" id="search" class="search-box" placeholder="Търсене (рег. №, фирма, водач)…">
-<div id="listContent"></div>
 
-<footer>
-  <button class="nav-btn" id="prevBtn">◄</button>
-  <div class="mid">
-    <div id="curCount">0</div>
-    <div id="pgInfo">1 / 1</div>
+<div class="firms-wrapper" id="firmsWrapper">
+  <div class="firms-ctrl">
+    <span class="firms-title" id="firmsTitle">ТОП ОПЕРАТОРИ В СКОУПА</span>
+    <button class="toggle-btn" id="firmsToggle" onclick="toggleFirms()">▲ РАЗШИРИ</button>
   </div>
-  <button class="nav-btn" id="nextBtn">►</button>
-</footer>
+  <div class="firms-grid" id="firmsGrid"></div>
+</div>
+
+<main>
+  <div class="list-side">
+    <div class="list-scroll" id="listContent"></div>
+    <div class="nav-bar" id="navBar">
+      <button class="nav-btn" id="prevBtn" disabled>◀ <span data-bg="НАЗАД" data-en="PREV">НАЗАД</span></button>
+      <span style="font-size:13px;font-weight:700;" id="pgInfo">1 / 1</span>
+      <button class="nav-btn" id="nextBtn" disabled><span data-bg="НАПРЕД" data-en="NEXT">НАПРЕД</span> ▶</button>
+    </div>
+  </div>
+
+  <div class="details-side" id="detailsPanel">
+    <div style="text-align:center;color:var(--muted);margin-top:40px;font-size:13px;" id="detailsPlaceholder">
+      Изберете автомобил за пълен хронологичен анализ.
+    </div>
+    <div id="detailsActual" style="display:none;flex-direction:column;gap:10px;">
+      <div class="detail-section" style="text-align:center;background:var(--line);">
+        <div id="dPlate" class="plate" style="font-size:24px;margin-bottom:6px;">—</div>
+        <div id="dModel" style="font-size:15px;font-weight:bold;color:var(--highlight);margin-top:4px;">—</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-title" id="dtOp">Текущ Оператор</div>
+        <div id="dOp" style="font-size:14px;font-weight:bold;">—</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-title" id="dtStatus">Статус на Разрешителното</div>
+        <div id="dStatus" style="font-size:13px;font-weight:bold;">—</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-title" id="dtDrivers">Шофьори</div>
+        <div id="dDrivers" style="font-size:13px;color:var(--muted);line-height:1.5;">—</div>
+      </div>
+      <div class="detail-section" style="border-color:var(--blue);background:rgba(59,130,246,0.02)">
+        <div class="detail-title" style="color:var(--blue)" id="dtTimeline">Хронология &amp; Миграция</div>
+        <div class="timeline" id="dTimeline"></div>
+      </div>
+    </div>
+  </div>
+</main>
 
 <script>
-/* =========================
+/* ================================================
    STATE
-========================= */
-let lang = 'bg';            // 'bg' or 'en'
-let raw = new Map();        // reg -> {reg, op, model, validTo:Date(end-of-day), drivers:Set, isNew:boolean, isGone:boolean}
-let oldKeys = new Set();    // regs from база 1
-let newKeys = new Set();    // regs from база 2
+================================================ */
+let lang = 'bg';
+let raw = new Map();
+let oldKeys = new Set();
+let newKeys = new Set();
+let historyMap = new Map();
 let base2Loaded = false;
 let filtered = [];
 let page = 1;
 const pageSize = 50;
+let fMode = 'all';
+let selOp = '';
+let selectedReg = null;
 
-let fMode = 'all';          // all | active | expired | gone
-let selOp = '';             // selected operator
+// Store file dates for labels
+let fileDate1 = '', fileDate2 = '';
 
-// compare vs "today start" to avoid time-of-day noise
 const todayStart = new Date(); todayStart.setHours(0,0,0,0);
 
-/* =========================
-   HELPERS
-========================= */
+/* ================================================
+   CORE HELPERS
+================================================ */
 function normReg(s){
-  return (s || '').toString().toUpperCase().replace(/\s+/g,'').trim();
+  return (s||'').toString().toUpperCase().replace(/\s+/g,'').trim();
+}
+function safeText(s){
+  return (s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 function display(s){
-  if(!s) return s;
-  return lang === 'en' ? translit(s) : s;
+  return lang === 'en' ? translit(s||'') : (s||'');
 }
-
-function safeText(s){
-  return (s ?? '').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'<','>':'>','"':'&quot;',"'":'&#39;'}[m]));
-}
-function formatFileDate(d){
-  // "2.5.2026 г." (as you requested)
-  const dd = d.getDate();
-  const mm = d.getMonth()+1;
-  const yy = d.getFullYear();
-  return `${dd}.${mm}.${yy} г.`;
+function formatDate(d){
+  if(!d||isNaN(d.getTime())) return '—';
+  return `${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()} г.`;
 }
 function parseValidTo(value){
-  // KEY FIX: treat date as end-of-day LOCAL to avoid timezone shifting
   if(!value) return new Date(2000,0,1,0,0,0,0);
-
-  if(typeof value === 'string'){
-    const m = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if(m){
-      const y = +m[1], mo = +m[2]-1, da = +m[3];
-      return new Date(y, mo, da, 23, 59, 59, 999);
-    }
+  if(typeof value==='string'){
+    const m=value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(m) return new Date(+m[1],+m[2]-1,+m[3],23,59,59,999);
   }
-  const dt = new Date(value);
+  const dt=new Date(value);
   if(isNaN(dt.getTime())) return new Date(2000,0,1,0,0,0,0);
-  return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 23, 59, 59, 999);
+  return new Date(dt.getFullYear(),dt.getMonth(),dt.getDate(),23,59,59,999);
 }
-function isActive(validTo){
-  return validTo >= todayStart;
-}
+function isActive(validTo){ return validTo>=todayStart; }
 
-/* =========================
-   EXTRACT ENTRIES (supports v68 flat + Sofia2 nested shape)
-========================= */
+/* ================================================
+   EXTRACT ENTRIES — supports both JSON shapes
+================================================ */
 function extractEntries(item){
-  const out = [];
-  const op = (item.operatorName || item.operator || item.operatorTitle || "ДРУГИ").toString().trim() || "ДРУГИ";
+  const out=[];
+  const op=(item.operatorName||item.operator||item.operatorTitle||"ДРУГИ").toString().trim()||"ДРУГИ";
 
-  // --- Sofia2.json shape ---
-  // Each operator item has taxiLicensesVehiclesDrivers[]
-  // Each element: { taxiLicense:{validTo}, taxiLicenseVehicle:{registerNumber, markAndModel}, taxiLicenseDriver:{driverName} }
-  // Drivers also in item.drivers[] with driverName
-  const vList = item.taxiLicensesVehiclesDrivers;
-  if(Array.isArray(vList) && vList.length > 0){
-    // Build driver names from item.drivers[] as fallback pool
-    const driverPool = (item.drivers || []).map(d => (d.driverName || '').trim()).filter(Boolean);
-
-    vList.forEach(vData => {
-      const v = vData.taxiLicenseVehicle || {};
-      const reg = normReg(v.registerNumber || v.regNumber || '');
+  const vList=item.taxiLicensesVehiclesDrivers;
+  if(Array.isArray(vList)&&vList.length>0){
+    const driverPool=(item.drivers||[]).map(d=>(d.driverName||'').trim()).filter(Boolean);
+    vList.forEach(vData=>{
+      const v=vData.taxiLicenseVehicle||{};
+      const reg=normReg(v.registerNumber||v.regNumber||'');
       if(!reg) return;
-      const model = (v.markAndModel || v.model || '—').toString().trim() || '—';
-      const lic = vData.taxiLicense || {};
-      const validTo = parseValidTo(lic.validTo || lic.validToDate || vData.validTo);
-      // driver name: from taxiLicenseDriver, then driverPool, then ТИТУЛЯР
-      const driverObj = vData.taxiLicenseDriver || {};
-      const driver = (driverObj.driverName || driverPool[0] || 'ТИТУЛЯР').toString().trim() || 'ТИТУЛЯР';
-      out.push({ reg, op, model, validTo, driver });
+      const model=(v.markAndModel||v.model||'—').toString().trim()||'—';
+      const lic=vData.taxiLicense||{};
+      const validTo=parseValidTo(lic.validTo||lic.validToDate||vData.validTo);
+      const driverObj=vData.taxiLicenseDriver||{};
+      const driver=(driverObj.driverName||driverPool[0]||'ТИТУЛЯР').toString().trim()||'ТИТУЛЯР';
+      out.push({reg,op,model,validTo,driver});
     });
     return out;
   }
 
-  // --- Flat / vehicles[] shape (v68, older) ---
-  const flatList = item.vehicles || item.items || null;
+  const flatList=item.vehicles||item.items||null;
   if(Array.isArray(flatList)){
-    flatList.forEach(vData => {
-      const v = vData.taxiLicenseVehicle || vData.vehicle || vData || {};
-      const reg = normReg(v.registerNumber || v.regNumber || '');
+    flatList.forEach(vData=>{
+      const v=vData.taxiLicenseVehicle||vData.vehicle||vData||{};
+      const reg=normReg(v.registerNumber||v.regNumber||'');
       if(!reg) return;
-      const model = (v.markAndModel || v.model || '—').toString().trim() || '—';
-      const validTo = parseValidTo(vData.validTo || vData.taxiLicense?.validTo || item.validTo);
-      const driver = (vData.driverName || vData.taxiLicenseDriver?.driverName || 'ТИТУЛЯР').toString().trim() || 'ТИТУЛЯР';
-      out.push({ reg, op, model, validTo, driver });
+      const model=(v.markAndModel||v.model||'—').toString().trim()||'—';
+      const validTo=parseValidTo(vData.validTo||vData.taxiLicense?.validTo||item.validTo);
+      const driver=(vData.driverName||vData.taxiLicenseDriver?.driverName||'ТИТУЛЯР').toString().trim()||'ТИТУЛЯР';
+      out.push({reg,op,model,validTo,driver});
     });
     return out;
   }
 
-  // --- Single record shape ---
-  const veh = item.taxiLicenseVehicle || item.vehicle || null;
-  if(veh && (veh.registerNumber || veh.regNumber)){
-    const reg = normReg(veh.registerNumber || veh.regNumber);
+  const veh=item.taxiLicenseVehicle||item.vehicle||null;
+  if(veh&&(veh.registerNumber||veh.regNumber)){
+    const reg=normReg(veh.registerNumber||veh.regNumber);
     if(!reg) return out;
-    const model = (veh.markAndModel || veh.model || '—').toString().trim() || '—';
-    const lic = item.taxiLicense || item.license || null;
-    const validTo = parseValidTo(lic?.validTo || lic?.validToDate || item.validTo);
-    const driver = (item.driverName || item.taxiLicenseDriver?.driverName || 'ТИТУЛЯР').toString().trim() || 'ТИТУЛЯР';
-    out.push({ reg, op, model, validTo, driver });
+    const model=(veh.markAndModel||veh.model||'—').toString().trim()||'—';
+    const lic=item.taxiLicense||item.license||null;
+    const validTo=parseValidTo(lic?.validTo||lic?.validToDate||item.validTo);
+    const driver=(item.driverName||item.taxiLicenseDriver?.driverName||'ТИТУЛЯР').toString().trim()||'ТИТУЛЯР';
+    out.push({reg,op,model,validTo,driver});
   }
   return out;
 }
 
-/* =========================
-   LOAD FILES + DATE FROM FILE SLOT 2
-========================= */
-async function loadFile(file, slot){
+/* ================================================
+   LOAD FILE (manual upload)
+================================================ */
+async function loadFile(file,slot){
   if(!file) return;
-  const lbl = document.getElementById('l'+slot);
-  lbl.classList.add('loaded');
-
-  const d = new Date(file.lastModified);
-  const dateStr = !isNaN(d.getTime()) ? d.toLocaleDateString('bg-BG') : '—';
-  const label = slot === 1 ? 'СТАРА' : 'НОВА';
-  // Update button text (keep hidden input inside)
-  lbl.childNodes[0].textContent = label + ': ' + file.name + ' • ' + dateStr;
-
-  // Update top-right date: slot2 always wins, slot1 only if slot2 not loaded
-  if(slot === 2 || !document.getElementById('l2').classList.contains('loaded')){
-    document.getElementById('jsonDate').textContent = dateStr;
+  const d=new Date(file.lastModified);
+  const dateStr=!isNaN(d.getTime())?formatDate(d):'—';
+  updateFileLabel(slot, file.name, dateStr);
+  if(slot===2||!document.getElementById('l2').classList.contains('loaded')){
+    document.getElementById('jsonDate').textContent=dateStr;
   }
-
-  const json = JSON.parse(await file.text());
-  processJson(json, slot);
+  const json=JSON.parse(await file.text());
+  processJson(json,slot);
 }
 
-function processJson(json, slot){
-  const list = Array.isArray(json) ? json : (json.data || json.items || []);
-  if(slot === 1){
-    raw.clear();
-    oldKeys.clear();
-    newKeys.clear();
-    base2Loaded = false;
+function updateFileLabel(slot, fname, dateStr){
+  const t=UI[lang];
+  const prefix=slot===1?t.base1:t.base2;
+  document.getElementById('lbl'+slot+'txt').textContent=prefix+': '+fname+' • '+dateStr;
+  document.getElementById('l'+slot).classList.add('loaded');
+  if(slot===1) fileDate1=dateStr;
+  else fileDate2=dateStr;
+}
+
+/* ================================================
+   PROCESS JSON
+================================================ */
+function processJson(json,slot){
+  const list=Array.isArray(json)?json:(json.data||json.items||[]);
+  if(slot===1){
+    raw.clear(); oldKeys.clear(); newKeys.clear(); historyMap.clear(); base2Loaded=false;
   }
 
-  list.forEach(item => {
-    const entries = extractEntries(item);
-    entries.forEach(e => {
+  list.forEach(item=>{
+    const entries=extractEntries(item);
+    entries.forEach(e=>{
       if(!e.reg) return;
+      if(!historyMap.has(e.reg)) historyMap.set(e.reg,{slot1:null,slot2:null});
+      const hist=historyMap.get(e.reg);
 
-      if(slot === 1){
+      if(slot===1){
         oldKeys.add(e.reg);
+        if(!hist.slot1||e.validTo>hist.slot1.validTo) hist.slot1={op:e.op,validTo:e.validTo};
         if(!raw.has(e.reg)){
-          raw.set(e.reg, {
-            reg: e.reg,
-            op: e.op,
-            model: e.model,
-            validTo: e.validTo,
-            drivers: new Set([e.driver]),
-            isNew: false,
-            isGone: false
-          });
+          raw.set(e.reg,{reg:e.reg,op:e.op,model:e.model,validTo:e.validTo,
+            drivers:new Set([e.driver]),isNew:false,isGone:false,isMigrated:false});
         } else {
-          // FIX: merge multiple records for same reg — take latest validTo
-          const ex = raw.get(e.reg);
+          const ex=raw.get(e.reg);
           ex.drivers.add(e.driver);
-          if(e.validTo > ex.validTo) ex.validTo = e.validTo;
-          if(!ex.op || ex.op === "ДРУГИ") ex.op = e.op;
-          if(!ex.model || ex.model === "—") ex.model = e.model;
+          if(e.validTo>ex.validTo) ex.validTo=e.validTo;
+          if(!ex.op||ex.op==="ДРУГИ") ex.op=e.op;
+          if(!ex.model||ex.model==="—") ex.model=e.model;
         }
       } else {
-        // slot === 2
-        base2Loaded = true;
-        const isNewFlag = oldKeys.size ? !oldKeys.has(e.reg) : false;
+        base2Loaded=true;
         newKeys.add(e.reg);
-
+        if(!hist.slot2||e.validTo>hist.slot2.validTo) hist.slot2={op:e.op,validTo:e.validTo};
+        const isNewFlag=oldKeys.size?!oldKeys.has(e.reg):false;
         if(!raw.has(e.reg)){
-          raw.set(e.reg, {
-            reg: e.reg,
-            op: e.op,
-            model: e.model,
-            validTo: e.validTo,
-            drivers: new Set([e.driver]),
-            isNew: isNewFlag,
-            isGone: false
-          });
+          raw.set(e.reg,{reg:e.reg,op:e.op,model:e.model,validTo:e.validTo,
+            drivers:new Set([e.driver]),isNew:isNewFlag,isGone:false,isMigrated:false});
         } else {
-          const ex = raw.get(e.reg);
+          const ex=raw.get(e.reg);
           ex.drivers.add(e.driver);
-
-          // choose latest validTo
-          if(e.validTo > ex.validTo) ex.validTo = e.validTo;
-
-          // keep nicer op/model if old was placeholder
-          if(!ex.op || ex.op === "ДРУГИ") ex.op = e.op;
-          if(!ex.model || ex.model === "—") ex.model = e.model;
-
-          if(isNewFlag) ex.isNew = true;
-          ex.isGone = false; // present in slot 2 → not gone
+          if(e.validTo>ex.validTo) ex.validTo=e.validTo;
+          if(!ex.op||ex.op==="ДРУГИ") ex.op=e.op;
+          if(!ex.model||ex.model==="—") ex.model=e.model;
+          if(isNewFlag) ex.isNew=true;
+          ex.isGone=false;
         }
       }
     });
   });
 
-  // After loading slot 2: mark gone cars (in old but not in new)
-  if(slot === 2 && oldKeys.size){
-    oldKeys.forEach(reg => {
-      if(!newKeys.has(reg) && raw.has(reg)){
-        raw.get(reg).isGone = true;
+  if(slot===2){
+    if(oldKeys.size){
+      oldKeys.forEach(reg=>{
+        if(!newKeys.has(reg)&&raw.has(reg)) raw.get(reg).isGone=true;
+      });
+    }
+    historyMap.forEach((h,reg)=>{
+      if(h.slot1&&h.slot2&&h.slot1.op!==h.slot2.op&&raw.has(reg)){
+        raw.get(reg).isMigrated=true;
+        raw.get(reg).op=h.slot2.op;
       }
     });
   }
@@ -348,247 +387,308 @@ function processJson(json, slot){
   apply();
 }
 
-/* =========================
-   FILTER MODE
-========================= */
+/* ================================================
+   AUTO-FETCH FROM GITHUB
+================================================ */
+async function autoFetch(url,slot){
+  try {
+    console.log('[AF'+slot+'] fetch:', url);
+    const res=await fetch(url);
+    if(!res.ok){console.warn('[AF'+slot+'] HTTP',res.status);return false;}
+    const lastMod=res.headers.get('Last-Modified');
+    const text=await res.text();
+    const json=JSON.parse(text);
+    processJson(json,slot);
+    const fname=url.split('/').pop();
+    const dateStr=lastMod?formatDate(new Date(lastMod)):formatDate(new Date());
+    updateFileLabel(slot,fname,dateStr);
+    if(slot===2||!document.getElementById('l2').classList.contains('loaded')){
+      document.getElementById('jsonDate').textContent=dateStr;
+    }
+    console.log('[AF'+slot+'] OK raw.size=',raw.size,'base2Loaded=',base2Loaded);
+    return true;
+  } catch(e){
+    console.error('[AF'+slot+'] ERROR:',e.message);
+    return false;
+  }
+}
+
+(async()=>{
+  let base=window.location.href.replace(/\/[^\/]*$/,'/');
+  if(!base.startsWith('http')) base='https://emillion-lab.github.io/TAXI/';
+  await autoFetch(base+'Sofia_24.03.2026.json',1);
+  const ok=await autoFetch(base+'taxi_data_Sofia8.6.26.json',2);
+  if(ok) setMode('active');
+})();
+
+/* ================================================
+   FILTER MODES
+================================================ */
 function setMode(m){
-  fMode = m;
-  document.querySelectorAll('.stat-item').forEach(x => x.classList.remove('active'));
-  if(m === 'all')     document.getElementById('fAll').classList.add('active');
-  if(m === 'active')  document.getElementById('fAct').classList.add('active');
-  if(m === 'expired') document.getElementById('fExp').classList.add('active');
-  if(m === 'new')     document.getElementById('fNew').classList.add('active');
-  if(m === 'gone')    document.getElementById('fGone').classList.add('active');
-  selOp = ''; // reset firm selection on mode change
+  fMode=m;
+  document.querySelectorAll('.stat-item').forEach(x=>{x.classList.remove('active');x.classList.remove('active-mig');});
+  const ids={all:'fAll',active:'fAct',expired:'fExp',new:'fNew',gone:'fGone',migration:'fMig'};
+  const cls=m==='migration'?'active-mig':'active';
+  if(ids[m]) document.getElementById(ids[m]).classList.add(cls);
+  document.getElementById('firmsWrapper').style.display=(m==='migration')?'none':'flex';
+  selOp='';
   apply();
 }
 
-/* =========================
-   FIRMS GRID — metrics reflect current mode scope
-   cars = count in current scope
-   drivers = drivers in scope
-   new/gone = highlighted if relevant to mode
-========================= */
+/* ================================================
+   FIRMS GRID
+================================================ */
 function rebuildFirms(carsInScope){
-  const map = {}; // op -> {cars, drivers, new, gone}
-  carsInScope.forEach(c => {
-    const op = c.op || "ДРУГИ";
-    if(!map[op]) map[op] = { cars:0, drivers:0, new:0, gone:0 };
+  const map={};
+  carsInScope.forEach(c=>{
+    const op=c.op||"ДРУГИ";
+    if(!map[op]) map[op]={cars:0,drivers:0,new:0,gone:0};
     map[op].cars++;
-    map[op].drivers += c.drivers.size;
-    if(c.isNew)  map[op].new++;
+    map[op].drivers+=c.drivers.size;
+    if(c.isNew) map[op].new++;
     if(c.isGone) map[op].gone++;
   });
-
-  const sorted = Object.entries(map).sort((a,b) => b[1].cars - a[1].cars).slice(0,20);
-
-  const grid = document.getElementById('firmsGrid');
-  grid.innerHTML = sorted.map(([name, s]) => `
+  const sorted=Object.entries(map).sort((a,b)=>b[1].cars-a[1].cars).slice(0,25);
+  const grid=document.getElementById('firmsGrid');
+  grid.innerHTML=sorted.map(([name,s])=>`
     <div class="firm-tag ${selOp===name?'selected':''}" data-op="${safeText(name)}">
       <div class="firm-name">${display(name)}</div>
       <div class="firm-metrics">
         <span class="mCars">🚕${s.cars}</span>
         <span class="mDrv">👤${s.drivers}</span>
-        ${s.new  ? `<span class="mNew">★${s.new}</span>` : ''}
-        ${s.gone ? `<span class="mExp">↩${s.gone}</span>` : ''}
+        ${s.new?`<span class="mNew">★${s.new}</span>`:''}
+        ${s.gone?`<span class="mExp">↩${s.gone}</span>`:''}
       </div>
     </div>
   `).join('');
-
-  grid.querySelectorAll('.firm-tag').forEach(el => {
-    el.addEventListener('click', () => {
-      const op = el.getAttribute('data-op') || '';
-      selOp = (selOp === op) ? '' : op;
+  grid.querySelectorAll('.firm-tag').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const op=el.getAttribute('data-op')||'';
+      selOp=(selOp===op)?'':op;
       apply();
     });
   });
 }
 
-/* =========================
-   APPLY (search + mode + firms + selected op)
-========================= */
+/* ================================================
+   APPLY — search + mode + firms
+================================================ */
 function apply(){
-  const q = (document.getElementById('search').value || '').toLowerCase().trim();
-  const all = Array.from(raw.values());
+  const q=(document.getElementById('search').value||'').toLowerCase().trim();
+  const all=Array.from(raw.values());
 
-  // overall stats (always from full dataset, unfiltered)
-  const actAll  = all.filter(c => isActive(c.validTo) && !c.isGone).length;
-  const expAll  = all.filter(c => !isActive(c.validTo) && !c.isGone).length;
-  const newAll  = all.filter(c => c.isNew).length;
-  const goneAll = all.filter(c => c.isGone).length;
-  const drvAll  = all.reduce((sum, c) => sum + c.drivers.size, 0);
+  const actAll  =all.filter(c=>isActive(c.validTo)&&!c.isGone).length;
+  const expAll  =all.filter(c=>!isActive(c.validTo)&&!c.isGone).length;
+  const newAll  =all.filter(c=>c.isNew).length;
+  const goneAll =all.filter(c=>c.isGone).length;
+  const migAll  =all.filter(c=>c.isMigrated).length;
 
-  document.getElementById('sAll').textContent  = raw.size - goneAll; // total visible (non-gone) unless in gone mode
-  document.getElementById('sAct').textContent  = actAll;
-  document.getElementById('sExp').textContent  = expAll;
-  document.getElementById('sNew').textContent  = newAll;
-  document.getElementById('sGone').textContent = goneAll;
+  document.getElementById('sAll').textContent  =raw.size-goneAll;
+  document.getElementById('sAct').textContent  =actAll;
+  document.getElementById('sExp').textContent  =expAll;
+  document.getElementById('sNew').textContent  =newAll;
+  document.getElementById('sGone').textContent =goneAll;
+  document.getElementById('sMig').textContent  =migAll;
 
-  // Only show НОВИ/ТРЪГНАЛИ buttons when база 2 is loaded
-  document.getElementById('fNew').style.opacity  = base2Loaded ? '1' : '0.35';
-  document.getElementById('fGone').style.opacity = base2Loaded ? '1' : '0.35';
+  const dim=!base2Loaded?'0.35':'1';
+  ['fNew','fGone','fMig'].forEach(id=>document.getElementById(id).style.opacity=dim);
 
-  // search filter
-  const base = all.filter(c => {
+  // search — supports both BG and transliterated EN
+  const base=all.filter(c=>{
     if(!q) return true;
-    const raw_blob = (c.reg + ' ' + c.op + ' ' + c.model + ' ' + Array.from(c.drivers).join(' ')).toLowerCase();
-    const en_blob = translit(raw_blob).toLowerCase();
-    return [q, ...translitQuery(q)].some(variant => raw_blob.includes(variant) || en_blob.includes(variant));
+    const blob=(c.reg+' '+c.op+' '+c.model+' '+Array.from(c.drivers).join(' ')).toLowerCase();
+    const enBlob=translit(blob).toLowerCase();
+    return blob.includes(q)||enBlob.includes(q);
   });
 
-  // mode filter BEFORE firm selection
-  const inMode = base.filter(c => {
-    if(fMode === 'active')  return isActive(c.validTo) && !c.isGone;
-    if(fMode === 'expired') return !isActive(c.validTo) && !c.isGone;
-    if(fMode === 'new')     return c.isNew;
-    if(fMode === 'gone')    return c.isGone;
-    // 'all' — exclude gone unless specifically in gone mode
+  const inMode=base.filter(c=>{
+    if(fMode==='active')    return isActive(c.validTo)&&!c.isGone;
+    if(fMode==='expired')   return !isActive(c.validTo)&&!c.isGone;
+    if(fMode==='new')       return c.isNew;
+    if(fMode==='gone')      return c.isGone;
+    if(fMode==='migration') return c.isMigrated;
     return !c.isGone;
   });
 
-  // firms reflect current mode+search
-  rebuildFirms(inMode);
+  if(fMode!=='migration'){
+    rebuildFirms(inMode);
+    filtered=selOp?inMode.filter(c=>c.op===selOp):inMode;
+    document.getElementById('navBar').style.display='flex';
+  } else {
+    filtered=inMode;
+    document.getElementById('navBar').style.display='none';
+  }
 
-  // selected firm filter
-  filtered = selOp ? inMode.filter(c => c.op === selOp) : inMode;
-
-  document.getElementById('curCount').textContent = filtered.length;
-
-  page = 1;
+  page=1;
   render();
 }
 
-/* =========================
-   RENDER LIST + PAGINATION
-========================= */
+/* ================================================
+   RENDER LIST / MIGRATION MATRIX
+================================================ */
 function render(){
-  const totalPages = Math.ceil(filtered.length / pageSize) || 1;
-  if(page > totalPages) page = totalPages;
+  const listContent=document.getElementById('listContent');
+  const t=UI[lang];
 
-  const start = (page-1) * pageSize;
-  const slice = filtered.slice(start, start + pageSize);
+  if(fMode==='migration'&&!document.getElementById('search').value){
+    const migStats={};
+    filtered.forEach(c=>{
+      const h=historyMap.get(c.reg);
+      if(h&&h.slot1&&h.slot2){
+        const key=`${h.slot1.op}➔${h.slot2.op}`;
+        if(!migStats[key]) migStats[key]={from:h.slot1.op,to:h.slot2.op,count:0};
+        migStats[key].count++;
+      }
+    });
+    const sortedMig=Object.values(migStats).sort((a,b)=>b.count-a.count);
+    if(!sortedMig.length){
+      listContent.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted);">${t.noMig}</div>`;
+      return;
+    }
+    listContent.innerHTML=`<div style="font-size:13px;font-weight:bold;color:var(--blue);margin-bottom:6px;padding:4px;">${t.topTransfers}</div>`
+      +sortedMig.map(m=>`
+      <div class="migration-row">
+        <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;">
+          <span style="font-size:11px;color:var(--muted);font-weight:bold;">${t.from}: ${display(m.from)}</span>
+          <span style="color:var(--blue);font-weight:bold;">⬇</span>
+          <span style="font-size:13px;font-weight:bold;">${t.to}: ${display(m.to)}</span>
+        </div>
+        <div class="mig-count">${m.count} ${t.pcs}</div>
+      </div>`).join('');
+    return;
+  }
 
-  document.getElementById('pgInfo').textContent = `${page} / ${totalPages}`;
+  const totalPages=Math.ceil(filtered.length/pageSize)||1;
+  if(page>totalPages) page=totalPages;
+  const start=(page-1)*pageSize;
+  const slice=fMode==='migration'?filtered:filtered.slice(start,start+pageSize);
 
-  document.getElementById('listContent').innerHTML = slice.map((c, i) => {
-    const act = isActive(c.validTo);
-    const border = c.isGone ? '#f97316' : (c.isNew ? 'var(--highlight)' : (act ? 'var(--accent)' : 'var(--red)'));
-    const tagClass = act ? 'v-ok' : 'v-err';
-    const t = UI[lang];
-    const tagText = act ? t.valid : t.expired_on;
-    const dList = Array.from(c.drivers).join(', ') || '—';
+  document.getElementById('pgInfo').textContent=`${page} / ${totalPages}`;
 
+  if(!slice.length){
+    listContent.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted);">${t.noResults}</div>`;
+    return;
+  }
+
+  listContent.innerHTML=slice.map((c,i)=>{
+    const act=isActive(c.validTo);
+    const border=c.isGone?'var(--orange)':(c.isMigrated?'var(--blue)':(c.isNew?'var(--highlight)':(act?'var(--accent)':'var(--red)')));
+    const tagClass=act?'v-ok':'v-err';
+    const tagText=act?t.valid:t.expired_on;
+    const dList=Array.from(c.drivers).join(', ')||'—';
+    const isSel=selectedReg===c.reg?'selected-card':'';
     return `
-      <div class="car-card" style="border-left:8px solid ${border}">
+      <div class="car-card ${isSel}" style="border-left:8px solid ${border}" onclick="showDetails('${c.reg}')">
         <div class="v-tag ${tagClass}">${tagText} ${c.validTo.toLocaleDateString('bg-BG')}</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:900;">#${start+i+1} | ${display(c.op)}</div>
-        <div style="margin-bottom:6px;">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:900;">#${start+i+1} | ${display(c.op)}</div>
+        <div style="margin-bottom:5px;">
           <span class="plate">${safeText(c.reg)}</span>
-          <span style="font-size:16px;margin-left:10px;color:var(--muted);font-weight:900;">${display(c.model)}</span>
-          ${c.isNew  ? `<span style="margin-left:10px;color:var(--highlight);font-weight:900;font-size:14px;">${t.isNew}</span>` : ''}
-          ${c.isGone ? `<span style="margin-left:10px;color:#f97316;font-weight:900;font-size:14px;">${t.isGone}</span>` : ''}
+          <span style="font-size:15px;margin-left:10px;color:var(--muted);font-weight:900;">${display(c.model)}</span>
+          ${c.isNew?`<span style="margin-left:8px;color:var(--highlight);font-weight:900;font-size:12px;">${t.isNew}</span>`:''}
+          ${c.isGone?`<span style="margin-left:8px;color:var(--orange);font-weight:900;font-size:12px;">${t.isGone}</span>`:''}
+          ${c.isMigrated?`<span style="margin-left:8px;color:var(--blue);font-weight:900;font-size:12px;">⇄ ${t.migrated}</span>`:''}
         </div>
         <div class="drivers">👤 ${display(dList)}</div>
-      </div>
-    `;
+      </div>`;
   }).join('');
 
-  document.getElementById('prevBtn').disabled = (page <= 1);
-  document.getElementById('nextBtn').disabled = (page >= totalPages);
+  document.getElementById('prevBtn').disabled=(page<=1);
+  document.getElementById('nextBtn').disabled=(page>=totalPages);
 }
 
 function pageNav(delta){
-  const totalPages = Math.ceil(filtered.length / pageSize) || 1;
-  const next = page + delta;
-  if(next >= 1 && next <= totalPages){
-    page = next;
+  const totalPages=Math.ceil(filtered.length/pageSize)||1;
+  const next=page+delta;
+  if(next>=1&&next<=totalPages){
+    page=next;
     render();
-    document.getElementById('listContent').scrollTop = 0;
+    document.getElementById('listContent').scrollTop=0;
   }
 }
 
-/* =========================
-   EVENTS
-========================= */
-document.getElementById('file1').addEventListener('change', e => loadFile(e.target.files[0], 1));
-document.getElementById('file2').addEventListener('change', e => loadFile(e.target.files[0], 2));
-document.getElementById('search').addEventListener('input', apply);
-document.getElementById('prevBtn').addEventListener('click', () => pageNav(-1));
-document.getElementById('nextBtn').addEventListener('click', () => pageNav(1));
-document.getElementById('fAll').addEventListener('click', () => setMode('all'));
-document.getElementById('fAct').addEventListener('click', () => setMode('active'));
-document.getElementById('fExp').addEventListener('click', () => setMode('expired'));
-document.getElementById('fNew').addEventListener('click', () => { if(base2Loaded) setMode('new'); });
-document.getElementById('fGone').addEventListener('click', () => { if(base2Loaded) setMode('gone'); });
+/* ================================================
+   DETAILS PANEL
+================================================ */
+window.showDetails=function(reg){
+  selectedReg=reg;
+  document.querySelectorAll('.car-card').forEach(c=>c.classList.remove('selected-card'));
+  const el=event?.currentTarget;
+  if(el) el.classList.add('selected-card');
+  const c=raw.get(reg);
+  if(!c) return;
+  document.getElementById('detailsPlaceholder').style.display='none';
+  document.getElementById('detailsActual').style.display='flex';
+  document.getElementById('dPlate').textContent=c.reg;
+  document.getElementById('dModel').textContent=display(c.model);
+  document.getElementById('dOp').textContent=display(c.op);
+  const act=isActive(c.validTo);
+  const statusEl=document.getElementById('dStatus');
+  const t=UI[lang];
+  statusEl.textContent=act?`${t.valid} ${c.validTo.toLocaleDateString('bg-BG')}`:`${t.expired_on} ${c.validTo.toLocaleDateString('bg-BG')}`;
+  statusEl.style.color=act?'var(--accent)':'var(--red)';
+  document.getElementById('dDrivers').textContent=Array.from(c.drivers).map(d=>display(d)).join('\n')||'—';
 
-/* =========================
-   AUTO-LOAD Sofia.json / Sofia2.json от същата директория
-========================= */
-async function autoFetch(url, slot){
-  try {
-    console.log('[AF'+slot+'] fetch start:', url);
-    const res = await fetch(url);
-    console.log('[AF'+slot+'] status:', res.status);
-    if(!res.ok) return false;
-    const lastMod = res.headers.get('Last-Modified');
-    console.log('[AF'+slot+'] Last-Modified:', lastMod);
-    const text = await res.text();
-    console.log('[AF'+slot+'] text length:', text.length);
-    const json = JSON.parse(text);
-    console.log('[AF'+slot+'] parsed, isArray:', Array.isArray(json), 'len:', Array.isArray(json) ? json.length : Object.keys(json).slice(0,3));
-    processJson(json, slot);
-    console.log('[AF'+slot+'] raw.size after:', raw.size, 'base2Loaded:', base2Loaded);
-    const lbl = document.getElementById('l' + slot);
-    if(lbl){
-      lbl.classList.add('loaded');
-      const fname = url.split('/').pop();
-      const label = slot === 1 ? 'СТАРА' : 'НОВА';
-      const dateStr = lastMod ? new Date(lastMod).toLocaleDateString('bg-BG') : '—';
-      lbl.childNodes[0].textContent = label + ': ' + fname + ' • ' + dateStr;
-      // Update top-right date: slot2 always wins, slot1 only if slot2 not loaded
-      if(slot === 2 || !document.getElementById('l2').classList.contains('loaded')){
-        document.getElementById('jsonDate').textContent = dateStr;
-      }
+  const hist=historyMap.get(reg);
+  const timeline=document.getElementById('dTimeline');
+  timeline.innerHTML='';
+  if(hist){
+    const d1=fileDate1||'24.03.2026 г.';
+    const d2=fileDate2||t.today;
+    if(hist.slot1){
+      const ok1=isActive(parseValidTo(hist.slot1.validTo));
+      timeline.innerHTML+=`<div class="timeline-item ${ok1?'active-node':''}">
+        <div class="timeline-date">${t.base1} (${d1})</div>
+        <div class="timeline-firm">${display(hist.slot1.op)}</div></div>`;
+    } else {
+      timeline.innerHTML+=`<div class="timeline-item">
+        <div class="timeline-date">${t.base1} (${d1})</div>
+        <div class="timeline-firm" style="color:var(--muted);font-style:italic;">${t.notFound}</div></div>`;
     }
-    return true;
-  } catch(e) {
-    console.error('[AF'+slot+'] ERROR:', e.message, e.stack);
-    return false;
+    if(hist.slot2){
+      const ok2=isActive(parseValidTo(hist.slot2.validTo));
+      const migNode=hist.slot1&&hist.slot1.op!==hist.slot2.op;
+      timeline.innerHTML+=`<div class="timeline-item ${migNode?'migrated-node':(ok2?'active-node':'')}">
+        <div class="timeline-date" style="${migNode?'color:var(--blue);':''}">${t.base2} (${d2})</div>
+        <div class="timeline-firm" style="${migNode?'color:var(--blue);font-weight:900;':''}">
+          ${display(hist.slot2.op)}
+          ${migNode?`<span style="font-size:10px;background:var(--blue);color:#fff;padding:1px 4px;border-radius:3px;margin-left:4px;">${t.newFirm}</span>`:''}
+        </div></div>`;
+    } else {
+      timeline.innerHTML+=`<div class="timeline-item" style="border-left-color:var(--orange);">
+        <div class="timeline-date" style="color:var(--orange);">${t.base2} (${d2})</div>
+        <div class="timeline-firm" style="color:var(--orange);font-style:italic;">${t.dropped}</div></div>`;
+    }
   }
-}
+};
 
-// Автоматично зареждане при старт
-(async () => {
-  let base = window.location.href.replace(/\/[^\/]*$/, '/');
-  if(!base.startsWith('http')) base = 'https://emillion-lab.github.io/TAXI/';
-
-  await autoFetch(base + 'Sofia_24.03.2026.json', 1);
-  const ok = await autoFetch(base + 'Sofia_09.05.2026.json', 2);
-  setMode('active');
-})();
-/* =========================
-   FIRMS TOGGLE
-========================= */
-let firmsExpanded = false;
+/* ================================================
+   FIRMS TOGGLE (3-state)
+================================================ */
+let firmsExpanded=false, firmsVisible=true;
 function toggleFirms(){
-  const grid = document.getElementById('firmsGrid');
-  const btn  = document.getElementById('firmsToggle');
-  if(!firmsExpanded){
+  const grid=document.getElementById('firmsGrid');
+  const btn=document.getElementById('firmsToggle');
+  const t=UI[lang];
+  if(firmsVisible&&!firmsExpanded){
     grid.classList.add('expanded');
-    btn.textContent = '▲ СКРИЙ';
-    firmsExpanded = true;
-  } else {
+    btn.textContent=t.collapse;
+    firmsExpanded=true;
+  } else if(firmsVisible&&firmsExpanded){
     grid.classList.remove('expanded');
-    btn.textContent = '▼ РАЗШИРИ';
-    firmsExpanded = false;
+    grid.classList.add('collapsed');
+    btn.textContent=t.show;
+    firmsExpanded=false; firmsVisible=false;
+  } else {
+    grid.classList.remove('collapsed');
+    btn.textContent=t.expand;
+    firmsVisible=true;
   }
 }
 
-
-/* =========================
+/* ================================================
    TRANSLITERATION BG → EN
-========================= */
-const TRANSLIT = {
+================================================ */
+const TRANSLIT={
   'А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ж':'Zh','З':'Z',
   'И':'I','Й':'Y','К':'K','Л':'L','М':'M','Н':'N','О':'O','П':'P',
   'Р':'R','С':'S','Т':'T','У':'U','Ф':'F','Х':'H','Ц':'Ts','Ч':'Ch',
@@ -598,266 +698,143 @@ const TRANSLIT = {
   'р':'r','с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'ts','ч':'ch',
   'ш':'sh','щ':'sht','ъ':'a','ь':'','ю':'yu','я':'ya'
 };
-
-const LEGAL = {
-  'ЕООД':'LLC','ООД':'Ltd','АД':'JSC','ЕАД':'JSC','КД':'LP','ЕТ':'SE'
+const LEGAL={'ЕООД':'LLC','ООД':'Ltd','АД':'JSC','ЕАД':'JSC','КД':'LP','ЕТ':'SE'};
+const BRANDS={
+  'PEZHO':'PEUGEOT','ПЕЖО':'PEUGEOT','SITROEN':'CITROËN','СИТРОЕН':'CITROËN',
+  'DACHIYA':'DACIA','ДАЧИЯ':'DACIA','FOLKSVAGEN':'VOLKSWAGEN','ФОЛКСВАГЕН':'VOLKSWAGEN',
+  'SHKODA':'ŠKODA','ШКОДА':'ŠKODA','RENO':'RENAULT','РЕНО':'RENAULT',
+  'SHEVROLET':'CHEVROLET','ШЕВРОЛЕТ':'CHEVROLET','MERSEDES':'MERCEDES','МЕРСЕДЕС':'MERCEDES',
+  'MITSIBISHI':'MITSUBISHI','МИЦУБИШИ':'MITSUBISHI','HYUNDAY':'HYUNDAI','HYONDAI':'HYUNDAI',
+  'NISAN':'NISSAN','НИСАН':'NISSAN','DZHIP':'JEEP','ДЖИП':'JEEP','BMV':'BMW',
+  'ЛАДА':'LADA','МАЗДА':'MAZDA','СУБАРУ':'SUBARU','СУЗУКИ':'SUZUKI','ФИАТ':'FIAT',
+  'TOYOYA':'TOYOTA','ТОЙОТА':'TOYOTA','ОПЕЛ':'OPEL','ФОРД':'FORD',
+  'ХОНДА':'HONDA','КИА':'KIA','ВОЛВО':'VOLVO','ПОРШЕ':'PORSCHE',
+  'OKTAVIYA':'OCTAVIA','OKTAVIA':'OCTAVIA','FABIYA':'FABIA',
+  'MEGAN':'MEGANE','KLIO':'CLIO','STENIK':'SCENIC','DASTER':'DUSTER',
+  'BERLINGO':'BERLINGO','LOGAN':'LOGAN','SANDERO':'SANDERO',
+  'KASHKAY':'QASHQAI','KASHKAI':'QASHQAI','КАШКАЙ':'QASHQAI',
+  'SVIFT':'SWIFT','SPRINTER':'SPRINTER','VIANO':'VIANO','VITO':'VITO',
+  'AUTLANDER':'OUTLANDER','АУТЛЕНДЕР':'OUTLANDER',
+  'O\' KEY':'OK','O" KEY':'OK'
 };
-
 function translit(str){
   if(!str) return str;
-  // Replace legal forms first
-  let s = str;
-  Object.entries(LEGAL).forEach(([bg, en]) => {
-    s = s.replace(new RegExp('\\b' + bg + '\\b', 'g'), en);
-  });
-
-  // Special UI word replacements (on cyrillic)
-  const SPECIAL = {
-    'О" КЕЙ':'OK', 'О\'КЕЙ':'OK', 'ТАКСИ':'TAXI', 'Такси':'Taxi', 'такси':'taxi',
-    'БАЗА':'DB', 'База':'DB', 'база':'db',
-    'СТАРА':'OLD', 'Стара':'Old', 'стара':'old',
-    'НОВА':'NEW', 'Нова':'New', 'нова':'new'
-  };
-  Object.entries(SPECIAL).forEach(([bg, en]) => {
-    s = s.split(bg).join(en);
-  });
-  const BRANDS = {
-    // === BRANDS ===
-    // Peugeot
-    'PEZHO':'PEUGEOT','ПЕЖО':'PEUGEOT',
-    // Citroën
-    'SITROEN':'CITROËN','СИТРОЕН':'CITROËN','CITROYEN':'CITROËN',
-    // Dacia
-    'DACHIYA':'DACIA','DAHIYA':'DACIA','DATSIYA':'DACIA','ДАЧИЯ':'DACIA',
-    // Volkswagen
-    'FOLKSVAGEN':'VOLKSWAGEN','FOLKVAGEN':'VOLKSWAGEN','VOLKSVAHEN':'VOLKSWAGEN','ФОЛКСВАГЕН':'VOLKSWAGEN',
-    // Škoda
-    'SHKODA':'ŠKODA','ШКОДА':'ŠKODA',
-    // Renault
-    'RENO':'RENAULT','РЕНО':'RENAULT',
-    // Chevrolet
-    'SHEVROLET':'CHEVROLET','ШЕВРОЛЕТ':'CHEVROLET',
-    // Mercedes-Benz
-    'MERSEDES':'MERCEDES','MERTSEDES':'MERCEDES','МЕРСЕДЕС':'MERCEDES',
-    // Mitsubishi
-    'MITSIBISHI':'MITSUBISHI','MITSYBISHI':'MITSUBISHI','МИЦУБИШИ':'MITSUBISHI',
-    // Hyundai
-    'HYUNDAY':'HYUNDAI','HYUNDEY':'HYUNDAI','HYONDAI':'HYUNDAI',
-    // Nissan
-    'NISAN':'NISSAN','НИСАН':'NISSAN',
-    // Jeep
-    'DZHIP':'JEEP','ДЖИП':'JEEP',
-    // BMW
-    'BMV':'BMW',
-    // Lada
-    'ЛАДА':'LADA',
-    // Mazda
-    'МАЗДА':'MAZDA',
-    // Subaru
-    'СУБАРУ':'SUBARU',
-    // Suzuki
-    'СУЗУКИ':'SUZUKI',
-    // Fiat
-    'ФИАТ':'FIAT',
-    // Alfa Romeo
-    'ALFA-ROMEO':'ALFA ROMEO',
-    // Toyota
-    'TOYOYA':'TOYOTA','ТОЙОТА':'TOYOTA',
-    // Opel
-    'ОПЕЛ':'OPEL',
-    // Ford
-    'ФОРД':'FORD',
-    // Honda
-    'ХОНДА':'HONDA',
-    // Kia
-    'КИА':'KIA',
-    // Seat
-    'SIYAT':'SEAT','СИАТ':'SEAT',
-    // Volvo
-    'VOLVO':'VOLVO','ВОЛВО':'VOLVO',
-    // Land Rover
-    'LAND ROVER':'LAND ROVER','LEND ROVER':'LAND ROVER',
-    // Mini
-    'MINI':'MINI',
-    // Porsche
-    'PORSHE':'PORSCHE','ПОРШЕ':'PORSCHE',
-    // Audi
-    'AUDI':'AUDI','АУД И':'AUDI',
-
-    // === MODELS ===
-    // VW
-    'KADDI':'CADDY','KADI':'CADDY',
-    'TURAN':'TOURAN',
-    'PASAT':'PASSAT',
-    'AY DI':'ID.','AYDI':'ID.',
-    // Ford
-    'B MAKS':'B-MAX','B-MAKS':'B-MAX',
-    'TORNEO KONEKT':'TOURNEO CONNECT','TORNEO KONNEKT':'TOURNEO CONNECT',
-    'TORNEO':'TOURNEO',
-    'KONEKT':'CONNECT','KONNEKT':'CONNECT',
-    'FOKUS':'FOCUS','МОНДИ О':'MONDEO','MONDEO':'MONDEO',
-    'FIYESTA':'FIESTA','FIESTA':'FIESTA',
-    'KUGA':'KUGA','MUSTANG':'MUSTANG',
-    // Hyundai
-    'AYONIK':'IONIQ','IONIK':'IONIQ',
-    'TUSSAN':'TUCSON','TUSAN':'TUCSON',
-    'I 30':'i30','I30':'i30','I 20':'i20','I20':'i20','I 10':'i10','I10':'i10',
-    // Kia
-    'SIID':'CEED','SID':'CEED',
-    'SPORTAZH':'SPORTAGE','SPORTAZH':'SPORTAGE',
-    'SORRENTO':'SORENTO',
-    // Opel
-    'NOCHBAK':'NOTCHBACK','NOSHBAK':'NOTCHBACK',
-    'KORSA':'CORSA','INSIGNIYA':'INSIGNIA','INSIGNIA':'INSIGNIA',
-    'MOKKA':'MOKKA','MOKA':'MOKKA',
-    'ZAFIRA':'ZAFIRA','MERIVA':'MERIVA','ANTARA':'ANTARA',
-    // Skoda
-    'OKTAVIYA':'OCTAVIA','OKTAVIA':'OCTAVIA',
-    'FABIYA':'FABIA',
-    // Renault
-    'MEGAN':'MEGANE','МЕГАН':'MEGANE',
-    'KLIO':'CLIO','КЛИО':'CLIO',
-    'STENIK':'SCENIC','STSENIK':'SCENIC',
-    'LAGUNA':'LAGUNA',
-    'SANDERO':'SANDERO',
-    'DASTER':'DUSTER',
-    'DOKER':'DOKKER',
-    // Dacia
-    'LOGAN':'LOGAN',
-    // Citroen
-    'BERLINGO':'BERLINGO',
-    'PIKASO':'PICASSO','PIKASSO':'PICASSO',
-    // Peugeot
-    'PARTNER':'PARTNER',
-    '308':'308','207':'207','208':'208','407':'407','508':'508',
-    // Fiat
-    'KUBO':'QUBO','PUNTO':'PUNTO','BRAVO':'BRAVO',
-    // Suzuki
-    'SUEYS':'SWACE','SVIFT':'SWIFT',
-    // Mercedes
-    'SPRINTER':'SPRINTER','VIANO':'VIANO','VITO':'VITO',
-    // Mitsubishi
-    'AUТLANDER':'OUTLANDER','AUTLANDER':'OUTLANDER','АУТЛЕНДЕР':'OUTLANDER',
-    'GALANT':'GALANT','KOLT':'COLT',
-    // Nissan
-    'KASHKAY':'QASHQAI','KASHKAI':'QASHQAI','КАШКАЙ':'QASHQAI',
-    'ALMERA':'ALMERA','PRIMERA':'PRIMERA',
-    // Special firms
-    'TAXIMI SOFIYA':'TAXIME SOFIA','TAKSIMI SOFIYA':'TAXIME SOFIA',
-    // Yellow
-    'YELOU':'YELLOW',
-    // OK
-    'O\' KEY':'OK','O" KEY':'OK','O\'\'KEY':'OK',
-  };
-  Object.entries(BRANDS).forEach(([wrong, right]) => {
-    s = s.split(wrong).join(right);
-  });
-
-  // Transliterate remaining cyrillic word by word
-  s = s.replace(/[\u0400-\u04FF]+/g, word => {
-    const isAllUpper = word === word.toUpperCase();
-    const isTitleCase = !isAllUpper && word[0] === word[0].toUpperCase();
-
-    let result = '';
+  let s=str;
+  Object.entries(LEGAL).forEach(([bg,en])=>{ s=s.replace(new RegExp('\\b'+bg+'\\b','g'),en); });
+  Object.entries(BRANDS).forEach(([w,r])=>{ s=s.split(w).join(r); });
+  s=s.replace(/[\u0400-\u04FF]+/g,word=>{
+    const allUp=word===word.toUpperCase();
+    const titleCase=!allUp&&word[0]===word[0].toUpperCase();
+    let res='';
     for(const c of word){
-      const lo = c.toLowerCase();
-      const mapped = TRANSLIT[lo];
-      if(mapped === undefined){ result += c; continue; }
-      if(isAllUpper){
-        result += mapped.toUpperCase();
-      } else if(isTitleCase && result === ''){
-        // First char of title-case word: capitalize only first letter of mapped
-        result += mapped[0].toUpperCase() + mapped.slice(1);
-      } else {
-        result += mapped;
-      }
+      const lo=c.toLowerCase();
+      const mapped=TRANSLIT[lo];
+      if(mapped===undefined){res+=c;continue;}
+      if(allUp) res+=mapped.toUpperCase();
+      else if(titleCase&&res==='') res+=mapped[0].toUpperCase()+mapped.slice(1);
+      else res+=mapped;
     }
-    return result;
+    return res;
   });
-
-  // Apply BRANDS again after translit to fix artifacts (YELOU→YELLOW, HYUNDAY→HYUNDAI etc.)
-  Object.entries(BRANDS).forEach(([wrong, right]) => {
-    s = s.split(wrong).join(right);
-  });
-
+  Object.entries(BRANDS).forEach(([w,r])=>{ s=s.split(w).join(r); });
   return s;
 }
 
-// Transliterate search query to both BG and latin for matching
-function translitQuery(q){
-  // returns array of variants to match against
-  return [q, translit(q)].map(s => s.toLowerCase());
-}
-
-/* =========================
+/* ================================================
    LANGUAGE SYSTEM
-========================= */
-const UI = {
-  bg: {
-    total:'ОБЩО', active:'АКТИВНИ', expired:'ИЗТЕКЛИ', new:'НОВИ', gone:'ТРЪГНАЛИ',
-    firms:'ТОП ФИРМИ', expand:'▼ РАЗШИРИ', collapse:'▲ СКРИЙ',
-    search:'Търсене (рег. №, фирма, водач)…',
-    valid:'ВАЛИДЕН ДО', expired_on:'ИЗТЕКЪЛ НА',
-    isNew:'★ НОВ', isGone:'↩ ТРЪГНАЛ',
-    base1:'СТАРА', base2:'НОВА', reset:'RESET', lang:'EN'
+================================================ */
+const UI={
+  bg:{
+    total:'ОБЩО',valid:'ВАЛИДЕН ДО',expired_on:'ИЗТЕКЪЛ НА',
+    isNew:'★ НОВ',isGone:'↩ ТРЪГНАЛ',migrated:'МИГРИРАЛ',
+    base1:'БАЗА 1',base2:'БАЗА 2',today:'Последна',notFound:'Липсва в регистъра',
+    newFirm:'НОВА ФИРМА',dropped:'ОТПАДНАЛ',
+    noResults:'Няма резултати.',noMig:'Няма открити трансфери.',
+    topTransfers:'ТОП ТРАНСФЕРИ НА АВТОМОБИЛИ МЕЖДУ ФИРМИ:',
+    from:'ОТ',to:'ДО',pcs:'бр.',
+    expand:'▲ РАЗШИРИ',collapse:'▼ СКРИЙ',show:'▶ ПОКАЖИ',
+    search:'Търсене по Рег. №, Фирма, Модел или Шофьор…',
+    firmsTitle:'ТОП ОПЕРАТОРИ В СКОУПА',lang:'EN',
+    dtOp:'Текущ Оператор',dtStatus:'Статус на Разрешителното',dtDrivers:'Шофьори',dtTimeline:'Хронология & Миграция'
   },
-  en: {
-    total:'TOTAL', active:'ACTIVE', expired:'EXPIRED', new:'NEW', gone:'LEFT',
-    firms:'TOP FIRMS', expand:'▼ EXPAND', collapse:'▲ COLLAPSE',
-    search:'Search (plate, company, driver)…',
-    valid:'VALID TO', expired_on:'EXPIRED ON',
-    isNew:'★ NEW', isGone:'↩ LEFT',
-    base1:'OLD', base2:'NEW', reset:'RESET', lang:'БГ'
+  en:{
+    total:'TOTAL',valid:'VALID TO',expired_on:'EXPIRED ON',
+    isNew:'★ NEW',isGone:'↩ LEFT',migrated:'MIGRATED',
+    base1:'DB 1',base2:'DB 2',today:'Latest',notFound:'Not in registry',
+    newFirm:'NEW FIRM',dropped:'DROPPED',
+    noResults:'No results.',noMig:'No transfers found.',
+    topTransfers:'TOP VEHICLE TRANSFERS BETWEEN COMPANIES:',
+    from:'FROM',to:'TO',pcs:'pcs.',
+    expand:'▲ EXPAND',collapse:'▼ COLLAPSE',show:'▶ SHOW',
+    search:'Search by Plate, Company, Model or Driver…',
+    firmsTitle:'TOP OPERATORS IN SCOPE',lang:'БГ',
+    dtOp:'Current Operator',dtStatus:'License Status',dtDrivers:'Drivers',dtTimeline:'Timeline & Migration'
   }
 };
 
 function toggleLang(){
-  lang = lang === 'bg' ? 'en' : 'bg';
+  lang=lang==='bg'?'en':'bg';
   applyLang();
-  apply(); // re-render cards and firms with new lang
+  apply();
+  if(selectedReg) showDetails(selectedReg);
 }
 
 function applyLang(){
-  const t = UI[lang];
-  document.getElementById('langBtn').textContent = t.lang;
-  document.querySelectorAll('.stat-lab').forEach(el => {
-    const key = el.getAttribute('data-' + lang);
-    if(key) el.textContent = key;
+  const t=UI[lang];
+  document.getElementById('langBtn').textContent=t.lang;
+  document.getElementById('search').placeholder=t.search;
+  document.getElementById('firmsTitle').textContent=t.firmsTitle;
+  document.querySelectorAll('[data-bg]').forEach(el=>{
+    const key=lang==='bg'?el.getAttribute('data-bg'):el.getAttribute('data-en');
+    if(key) el.textContent=key;
   });
-  document.getElementById('firmsTitle').textContent = t.firms;
-  document.getElementById('firmsToggle').textContent =
-    firmsExpanded ? t.collapse : t.expand;
-  document.getElementById('search').placeholder = t.search;
-  // Update base button labels
-  ['1','2'].forEach(n => {
-    const lbl = document.getElementById('l'+n);
-    if(!lbl) return;
-    const prefix = n === '1' ? t.base1 : t.base2;
-    if(lbl.classList.contains('loaded')){
-      // loaded: swap prefix but keep filename and date
-      const txt = lbl.childNodes[0].textContent;
-      const rest = txt.replace(/^(СТАРА|НОВА|OLD|NEW):\s*/,'').trim();
-      lbl.childNodes[0].textContent = prefix + ': ' + rest;
-    } else {
-      // not loaded: show DB 1 / DB 2 or БАЗА 1 / БАЗА 2
-      const dbWord = lang === 'en' ? 'DB' : 'БАЗА';
-      lbl.childNodes[0].textContent = dbWord + ' ' + n;
-    }
+  document.getElementById('dtOp').textContent=t.dtOp;
+  document.getElementById('dtStatus').textContent=t.dtStatus;
+  document.getElementById('dtDrivers').textContent=t.dtDrivers;
+  document.getElementById('dtTimeline').textContent=t.dtTimeline;
+  // Update file labels (swap BG/EN prefix only if loaded)
+  ['1','2'].forEach(n=>{
+    const lbl=document.getElementById('l'+n);
+    const span=document.getElementById('lbl'+n+'txt');
+    if(!span) return;
+    const prefix=n==='1'?t.base1:t.base2;
+    const cur=span.textContent;
+    const rest=cur.replace(/^(БАЗА|DB)\s*[12]:\s*/,'').replace(/^(БАЗА|DB)\s*[12]/,'').trim();
+    span.textContent=lbl.classList.contains('loaded')?prefix+': '+rest:prefix;
   });
+  // Update firms toggle button text
+  const btn=document.getElementById('firmsToggle');
+  if(!firmsVisible) btn.textContent=t.show;
+  else if(firmsExpanded) btn.textContent=t.collapse;
+  else btn.textContent=t.expand;
 }
 
-/* =========================
+/* ================================================
    CLOCK
-========================= */
+================================================ */
 function updateClock(){
-  const now = new Date();
-  const h = String(now.getHours()).padStart(2,'0');
-  const m = String(now.getMinutes()).padStart(2,'0');
-  const date = now.toLocaleDateString('bg-BG');
-  document.getElementById('liveClock').textContent = date + ' ' + h + ':' + m;
+  const now=new Date();
+  const h=String(now.getHours()).padStart(2,'0');
+  const m=String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('liveClock').textContent=now.toLocaleDateString('bg-BG')+' '+h+':'+m;
 }
 updateClock();
-setInterval(updateClock, 10000);
+setInterval(updateClock,10000);
+
+/* ================================================
+   EVENT LISTENERS
+================================================ */
+document.getElementById('file1').addEventListener('change',e=>loadFile(e.target.files[0],1));
+document.getElementById('file2').addEventListener('change',e=>loadFile(e.target.files[0],2));
+document.getElementById('search').addEventListener('input',apply);
+document.getElementById('prevBtn').addEventListener('click',()=>pageNav(-1));
+document.getElementById('nextBtn').addEventListener('click',()=>pageNav(1));
+document.getElementById('fAll').addEventListener('click',()=>setMode('all'));
+document.getElementById('fAct').addEventListener('click',()=>setMode('active'));
+document.getElementById('fExp').addEventListener('click',()=>setMode('expired'));
+document.getElementById('fNew').addEventListener('click',()=>{if(base2Loaded)setMode('new');});
+document.getElementById('fGone').addEventListener('click',()=>{if(base2Loaded)setMode('gone');});
+document.getElementById('fMig').addEventListener('click',()=>{if(base2Loaded)setMode('migration');});
 </script>
 </body>
 </html>
