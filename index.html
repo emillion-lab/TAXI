@@ -346,7 +346,7 @@ function extractEntries(item){
     forOwnAccount:!!d.forOwnAccount
   })).filter(d=>d.name);
 
-  const processVehicle=(reg, model, validTo, driverName, ownership, firstRegDate, licenseNumber, licValidFrom, licValidTo)=>{
+  const processVehicle=(reg, model, validTo, driverName, ownership, firstRegDate, licenseNumber, licValidFrom, licValidTo, attachDrivers=false)=>{
     if(!reg) return;
     out.push({reg, op, model, validTo, driver:driverName||'ТИТУЛЯР'});
 
@@ -360,8 +360,8 @@ function extractEntries(item){
       if(!ex.muni&&muni) ex.muni=muni;
     }
 
-    // driverMap
-    if(driverList.length&&!driverMap.has(reg)){
+    // driverMap — only attach operator-level drivers when explicitly requested (Shape A with real driver assignment)
+    if(attachDrivers&&driverList.length&&!driverMap.has(reg)){
       driverMap.set(reg, driverList);
     }
 
@@ -388,12 +388,13 @@ function extractEntries(item){
       const lic=vData.taxiLicense||{};
       const validTo=parseValidTo(lic.validTo||lic.validToDate||vData.validTo);
       const driverObj=vData.taxiLicenseDriver||{};
-      const driverName=(driverObj.driverName||driverPool[0]||'ТИТУЛЯР').toString().trim();
+      const hasOwnDriver=!!(driverObj.driverName||'').trim();
+      const driverName=(hasOwnDriver?driverObj.driverName:'ТИТУЛЯР').toString().trim();
       const ownership=(v.ownership||'').toLowerCase();
       const firstRegDate=parseDate(v.firstRegistrationDate);
       const licVF=parseDate(lic.validFrom);
       const licVT=parseValidTo(lic.validTo||lic.validToDate);
-      processVehicle(reg, model, validTo, driverName, ownership, firstRegDate, lic.licenseNumber||'', licVF, licVT);
+      processVehicle(reg, model, validTo, driverName, ownership, firstRegDate, lic.licenseNumber||'', licVF, licVT, hasOwnDriver);
     });
     return out;
   }
@@ -829,7 +830,7 @@ function render(){
     const border=c.isGone?'var(--orange)':(c.isMigrated?'var(--blue)':(c.isNew?'var(--highlight)':(soon?'var(--highlight)':(act?'var(--accent)':'var(--red)'))));
     const tagClass=act?(soon?'v-warn':'v-ok'):'v-err';
     const tagText=act?(soon?t.expSoon:t.valid):t.expired_on;
-    const dList=Array.from(c.drivers).join(', ')||'—';
+    const dList=Array.from(c.drivers).filter(d=>d&&d!=='ТИТУЛЯР').join(', ')||'—';
     const isSel=selectedReg===c.reg?'selected-card':'';
 
     // Extra tags for list cards
@@ -940,7 +941,7 @@ window.showDetails=function(reg){
       return `<div style="padding:3px 0;border-bottom:1px solid var(--line)">👤 ${display(d.name)}${uvltaStr}</div>`;
     }).join('');
   } else {
-    driversSect.innerHTML=Array.from(c.drivers).map(d=>`<div style="padding:3px 0;">👤 ${display(d)}</div>`).join('')||'—';
+    driversSect.innerHTML=Array.from(c.drivers).filter(d=>d&&d!=='ТИТУЛЯР').map(d=>`<div style="padding:3px 0;">👤 ${display(d)}</div>`).join('')||'—';
   }
 
   // Full license history
