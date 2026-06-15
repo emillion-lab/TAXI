@@ -360,9 +360,17 @@ function extractEntries(item){
       if(!ex.muni&&muni) ex.muni=muni;
     }
 
-    // driverMap — only attach operator-level drivers when explicitly requested (Shape A with real driver assignment)
-    if(attachDrivers&&driverList.length&&!driverMap.has(reg)){
-      driverMap.set(reg, driverList);
+    // driverMap — attach only the specific driver of this vehicle (from taxiLicenseDriver)
+    // attachDrivers is a driver object {name, uvltaNumber, uvltaEndDate, ...} or false
+    if(attachDrivers&&attachDrivers.name){
+      if(!driverMap.has(reg)){
+        driverMap.set(reg, [attachDrivers]);
+      } else {
+        const existing=driverMap.get(reg);
+        if(!existing.some(d=>d.name===attachDrivers.name)){
+          existing.push(attachDrivers);
+        }
+      }
     }
 
     // licenseHistory per vehicle
@@ -379,7 +387,6 @@ function extractEntries(item){
   // Shape A: taxiLicensesVehiclesDrivers (full history)
   const vList=item.taxiLicensesVehiclesDrivers;
   if(Array.isArray(vList)&&vList.length>0){
-    const driverPool=driverList.map(d=>d.name);
     vList.forEach(vData=>{
       const v=vData.taxiLicenseVehicle||{};
       const reg=normReg(v.registerNumber||v.regNumber||'');
@@ -390,11 +397,15 @@ function extractEntries(item){
       const driverObj=vData.taxiLicenseDriver||{};
       const hasOwnDriver=!!(driverObj.driverName||'').trim();
       const driverName=(hasOwnDriver?driverObj.driverName:'ТИТУЛЯР').toString().trim();
+      // Find matching driver entry in driverList for UVLTA info
+      const specificDriver=hasOwnDriver
+        ? (driverList.find(d=>d.name===driverName)||{name:driverName, uvltaNumber:'', uvltaEndDate:null, contractDate:null, forOwnAccount:false})
+        : false;
       const ownership=(v.ownership||'').toLowerCase();
       const firstRegDate=parseDate(v.firstRegistrationDate);
       const licVF=parseDate(lic.validFrom);
       const licVT=parseValidTo(lic.validTo||lic.validToDate);
-      processVehicle(reg, model, validTo, driverName, ownership, firstRegDate, lic.licenseNumber||'', licVF, licVT, hasOwnDriver);
+      processVehicle(reg, model, validTo, driverName, ownership, firstRegDate, lic.licenseNumber||'', licVF, licVT, specificDriver);
     });
     return out;
   }
