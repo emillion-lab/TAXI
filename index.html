@@ -599,7 +599,7 @@ async function autoFetch(url,slot){
   let base=window.location.href.replace(/\/[^\/]*$/,'/');
   if(!base.startsWith('http')) base='https://emillion-lab.github.io/TAXI/';
   await autoFetch(base+'Sofia_24.03.2026.json',1);
-  const ok=await autoFetch(base+'taxi_data_Sofia15.06.2026.json',2);
+  const ok=await autoFetch(base+'taxi_data_Sofia20.07.2026.json',2);
   if(ok) setMode('active');
 })();
 
