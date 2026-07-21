@@ -1,0 +1,61 @@
+name: registry-pull
+on:
+  schedule:
+    - cron: '0 3 1 * *'   # 1-во число всеки месец, 06:00 София
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/registry-pull.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pull ИААА taxi register (страниците като твоя скрейпър, без прокси)
+        run: |
+          python3 - <<'PYEOF'
+          import urllib.request, json, time, datetime, sys
+          Q = 'София'
+          STEP = 100
+          start, all_rows = 1, []
+          while True:
+              end = start + STEP - 1
+              url = (f'https://taxireg.infosys.bg/TaxiReg/api/custom/publicregister/query'
+                     f'?rowBegin={start}&rowEnd={end}&q={urllib.parse.quote(Q)}&sort=createdAt&order=desc')
+              req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json'})
+              try:
+                  data = json.loads(urllib.request.urlopen(req, timeout=60).read().decode('utf-8'))
+              except Exception as e:
+                  print('FETCH ERROR at', start, '::', e)
+                  if not all_rows:
+                      sys.exit(1)
+                  break
+              rows = data if isinstance(data, list) else (data.get('rows') or [])
+              if not rows:
+                  break
+              all_rows.extend(rows)
+              print(f'{start}-{end}: +{len(rows)} (общо {len(all_rows)})')
+              start += STEP
+              time.sleep(0.6)
+
+          if len(all_rows) < 100:
+              print('Подозрително малко записи — не записвам.'); sys.exit(1)
+
+          t = datetime.date.today()
+          fname = f'taxi_data_Sofia{t.day}.{t.month}.{t.year}.json'
+          json.dump(all_rows, open(fname, 'w', encoding='utf-8'), ensure_ascii=False)
+          print('Записано:', fname, '| записи:', len(all_rows))
+          open('registry-pull-report.txt', 'w', encoding='utf-8').write(
+              f'{t}: {len(all_rows)} записа -> {fname}\n')
+          PYEOF
+
+      - name: Commit
+        run: |
+          git config user.name registry-bot; git config user.email registry-bot@taxi
+          git add taxi_data_*.json registry-pull-report.txt
+          git diff --cached --quiet || (git commit -m "registry: monthly auto-pull from ИААА" && git push)
