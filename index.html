@@ -458,13 +458,17 @@ async function loadFile(file,slot){
 }
 
 function extractDateFromFilename(fname){
-  // Try to find a date pattern in the filename: DD.MM.YYYY, YYYY-MM-DD, DDMonYYYY, etc.
-  // Common pattern: Sofia_24.03.2026.json or taxi_data_Sofia15.06.2026.json
-  const m1=fname.match(/(\d{1,2})[._-](\d{2})[._-](\d{4})/);
-  if(m1) return `${+m1[1]}.${+m1[2]}.${m1[3]} г.`;
-  const m2=fname.match(/(\d{4})[._-](\d{2})[._-](\d{1,2})/);
+  // Try to find a date pattern in the filename: D.M.YYYY, DD.MM.YYYY, D.M.YY, YYYY-MM-DD, etc.
+  // Day/month may be 1 or 2 digits (e.g. 1.8.2026, 21.7.2026); year may be 2 or 4 digits (e.g. 8.6.26).
+  const m1=fname.match(/(\d{1,2})[._-](\d{1,2})[._-](\d{4}|\d{2})/);
+  if(m1){
+    let y=m1[3];
+    if(y.length===2) y='20'+y; // assume 2000s
+    return `${+m1[1]}.${+m1[2]}.${y} г.`;
+  }
+  const m2=fname.match(/(\d{4})[._-](\d{1,2})[._-](\d{1,2})/);
   if(m2) return `${+m2[3]}.${+m2[2]}.${m2[1]} г.`;
-  // Last resort: try to find 8+ digit sequence DDMMYYYY
+  // Last resort: try to find 8-digit sequence DDMMYYYY
   const m3=fname.match(/(\d{2})(\d{2})(\d{4})/);
   if(m3) return `${+m3[1]}.${+m3[2]}.${m3[3]} г.`;
   return null;
