@@ -257,14 +257,17 @@
    STATE
 ================================================ */
 let lang='bg';
-let raw=new Map();
+let raw=new Map();          // current fleet — built ONLY from БАЗА 2 (the authoritative current snapshot)
+let base1Raw=new Map();     // baseline snapshot — built ONLY from БАЗА 1, used purely for comparison
+let goneCars=new Map();     // reg -> car object, present in БАЗА 1 but no longer in БАЗА 2
 let oldKeys=new Set();
 let newKeys=new Set();
 let historyMap=new Map();    // reg -> {slot1, slot2}
 let licenseHistory=new Map();// reg -> [{licenseNumber, validFrom, validTo}] — full TLVD history
 let vehicleExtra=new Map();  // reg -> {firstRegDate, ownership, muni, operatorIdn, licenseNumber(op)}
 let driverMap=new Map();     // reg -> [{driverName, uvltaNumber, uvltaEndDate, contractDate, forOwnAccount}]
-let base2Loaded=false;
+let base1Loaded=false;       // БАЗА 1 (baseline) loaded — enables NEW/GONE/MIGRATED comparison
+let base2Loaded=false;       // БАЗА 2 (current) loaded — required for any stats at all
 let filtered=[];
 let page=1;
 const pageSize=50;
@@ -488,26 +491,52 @@ function updateFileLabel(slot,fname,dateStr){
 
 /* ================================================
    PROCESS JSON
+   raw (current fleet) is built ONLY from БАЗА 2.
+   base1Raw (baseline) is built ONLY from БАЗА 1.
+   БАЗА 1 is used purely for comparison — it never
+   overwrites or merges into the current-fleet data.
 ================================================ */
 function processJson(json,slot){
   const list=Array.isArray(json)?json:(json.data||json.items||[]);
+
   if(slot===1){
-    raw.clear(); oldKeys.clear(); newKeys.clear();
+    base1Raw.clear(); oldKeys.clear();
     historyMap.clear(); licenseHistory.clear();
     vehicleExtra.clear(); driverMap.clear();
-    base2Loaded=false;
+    goneCars.clear();
+    base1Loaded=true;
+  } else {
+    raw.clear(); newKeys.clear();
+    base2Loaded=true;
   }
 
   list.forEach(item=>{
     const entries=extractEntries(item);
     entries.forEach(e=>{
       if(!e.reg) return;
-      if(!historyMap.has(e.reg)) historyMap.set(e.reg,{slot1:null,slot2:null});
-      const hist=historyMap.get(e.reg);
 
       if(slot===1){
         oldKeys.add(e.reg);
+        if(!historyMap.has(e.reg)) historyMap.set(e.reg,{slot1:null,slot2:null});
+        const hist=historyMap.get(e.reg);
         if(!hist.slot1||e.validTo>hist.slot1.validTo) hist.slot1={op:e.op,validTo:e.validTo};
+
+        if(!base1Raw.has(e.reg)){
+          base1Raw.set(e.reg,{reg:e.reg,op:e.op,model:e.model,validTo:e.validTo,
+            drivers:new Set([e.driver]),isGone:true});
+        } else {
+          const ex=base1Raw.get(e.reg);
+          ex.drivers.add(e.driver);
+          if(e.validTo>ex.validTo) ex.validTo=e.validTo;
+          if(!ex.op||ex.op==='ДРУГИ') ex.op=e.op;
+          if(!ex.model||ex.model==='—') ex.model=e.model;
+        }
+      } else {
+        newKeys.add(e.reg);
+        if(!historyMap.has(e.reg)) historyMap.set(e.reg,{slot1:null,slot2:null});
+        const hist=historyMap.get(e.reg);
+        if(!hist.slot2||e.validTo>hist.slot2.validTo) hist.slot2={op:e.op,validTo:e.validTo};
+
         if(!raw.has(e.reg)){
           raw.set(e.reg,{reg:e.reg,op:e.op,model:e.model,validTo:e.validTo,
             drivers:new Set([e.driver]),isNew:false,isGone:false,isMigrated:false});
@@ -518,37 +547,27 @@ function processJson(json,slot){
           if(!ex.op||ex.op==='ДРУГИ') ex.op=e.op;
           if(!ex.model||ex.model==='—') ex.model=e.model;
         }
-      } else {
-        base2Loaded=true;
-        newKeys.add(e.reg);
-        if(!hist.slot2||e.validTo>hist.slot2.validTo) hist.slot2={op:e.op,validTo:e.validTo};
-        const isNewFlag=oldKeys.size?!oldKeys.has(e.reg):false;
-        if(!raw.has(e.reg)){
-          raw.set(e.reg,{reg:e.reg,op:e.op,model:e.model,validTo:e.validTo,
-            drivers:new Set([e.driver]),isNew:isNewFlag,isGone:false,isMigrated:false});
-        } else {
-          const ex=raw.get(e.reg);
-          ex.drivers.add(e.driver);
-          if(e.validTo>ex.validTo) ex.validTo=e.validTo;
-          if(!ex.op||ex.op==='ДРУГИ') ex.op=e.op;
-          if(!ex.model||ex.model==='—') ex.model=e.model;
-          if(isNewFlag) ex.isNew=true;
-          ex.isGone=false;
-        }
       }
     });
   });
 
   if(slot===2){
-    if(oldKeys.size) oldKeys.forEach(reg=>{
-      if(!newKeys.has(reg)&&raw.has(reg)) raw.get(reg).isGone=true;
-    });
-    historyMap.forEach((h,reg)=>{
-      if(h.slot1&&h.slot2&&h.slot1.op!==h.slot2.op&&raw.has(reg)){
-        raw.get(reg).isMigrated=true;
-        raw.get(reg).op=h.slot2.op;
-      }
-    });
+    // Comparison against БАЗА 1 (baseline) — only affects flags, never overwrites БАЗА 2 data
+    goneCars.clear();
+    if(oldKeys.size){
+      raw.forEach((car,reg)=>{ car.isNew=!oldKeys.has(reg); });
+      historyMap.forEach((h,reg)=>{
+        if(h.slot1&&h.slot2&&h.slot1.op!==h.slot2.op&&raw.has(reg)){
+          raw.get(reg).isMigrated=true;
+          // op stays as-is: raw is built from БАЗА 2, so it already reflects the current operator
+        }
+      });
+      base1Raw.forEach((car,reg)=>{
+        if(!raw.has(reg)) goneCars.set(reg,car);
+      });
+    } else {
+      raw.forEach(car=>{ car.isNew=false; car.isMigrated=false; });
+    }
   }
 
   // Sort license history per vehicle newest first
@@ -603,8 +622,10 @@ async function autoFetch(url,slot){
   let base=window.location.href.replace(/\/[^\/]*$/,'/');
   if(!base.startsWith('http')) base='https://emillion-lab.github.io/TAXI/';
 
-  // Discover the two most recent dated JSON data files automatically
+  // Discover all dated JSON data files automatically
   // (registry-pull writes a new dated file each month; no more hardcoded names).
+  // БАЗА 1 = OLDEST available file (long baseline period for comparison).
+  // БАЗА 2 = NEWEST available file (current, authoritative snapshot).
   try{
     const apiRes=await fetch('https://api.github.com/repos/emillion-lab/TAXI/contents/');
     if(!apiRes.ok) throw new Error('GitHub API '+apiRes.status);
@@ -620,8 +641,10 @@ async function autoFetch(url,slot){
       .sort((a,b)=>b.ts-a.ts);
 
     if(dated.length>=2){
-      await autoFetch(base+dated[1].name,1); // second-newest -> baseline
-      const ok=await autoFetch(base+dated[0].name,2); // newest -> current
+      const oldest=dated[dated.length-1]; // earliest available (e.g. March) — long baseline
+      const newest=dated[0];              // most recent — current snapshot
+      await autoFetch(base+oldest.name,1);
+      const ok=await autoFetch(base+newest.name,2);
       if(ok){ setMode('active'); return; }
     } else if(dated.length===1){
       const ok=await autoFetch(base+dated[0].name,1);
@@ -729,28 +752,32 @@ function rebuildFirms(carsInScope){
 ================================================ */
 function apply(){
   const q=(document.getElementById('search').value||'').toLowerCase().trim();
-  const all=Array.from(raw.values());
+  const all=Array.from(raw.values());          // current fleet (БАЗА 2 only)
+  const goneAll=Array.from(goneCars.values()); // departed since БАЗА 1 (reference only)
 
-  const actAll  =all.filter(c=>isActive(c.validTo)&&!c.isGone).length;
-  const expAll  =all.filter(c=>!isActive(c.validTo)&&!c.isGone).length;
+  const actAll  =all.filter(c=>isActive(c.validTo)).length;
+  const expAll  =all.filter(c=>!isActive(c.validTo)).length;
   const newAll  =all.filter(c=>c.isNew).length;
-  const goneAll =all.filter(c=>c.isGone).length;
   const migAll  =all.filter(c=>c.isMigrated).length;
-  const soonAll =all.filter(c=>isExpiringSoon(c.validTo)&&!c.isGone).length;
+  const soonAll =all.filter(c=>isExpiringSoon(c.validTo)).length;
 
-  document.getElementById('sAll').textContent  =raw.size-goneAll;
+  document.getElementById('sAll').textContent  =raw.size;
   document.getElementById('sAct').textContent  =actAll;
   document.getElementById('sExp').textContent  =expAll;
   document.getElementById('sSoon').textContent =soonAll;
   document.getElementById('sNew').textContent  =newAll;
-  document.getElementById('sGone').textContent =goneAll;
+  document.getElementById('sGone').textContent =goneAll.length;
   document.getElementById('sMig').textContent  =migAll;
 
-  const dim=!base2Loaded?'0.35':'1';
+  const dim=!base1Loaded?'0.35':'1'; // NEW/GONE/MIGRATED need a baseline (БАЗА 1) to mean anything
   ['fNew','fGone','fMig'].forEach(id=>document.getElementById(id).style.opacity=dim);
 
+  // choose source list: normal filters always work off the current fleet;
+  // ТРЪГНАЛИ is the one view that shows the separate baseline-only list
+  const sourceList=(fMode==='gone')?goneAll:all;
+
   // search
-  const base=all.filter(c=>{
+  const base=sourceList.filter(c=>{
     if(!q) return true;
     const blob=(c.reg+' '+c.op+' '+c.model+' '+Array.from(c.drivers).join(' ')).toLowerCase();
     const enBlob=translit(blob).toLowerCase();
@@ -759,13 +786,13 @@ function apply(){
 
   // mode
   const inMode=base.filter(c=>{
-    if(fMode==='active')    return isActive(c.validTo)&&!c.isGone;
-    if(fMode==='expired')   return !isActive(c.validTo)&&!c.isGone;
-    if(fMode==='soon')      return isExpiringSoon(c.validTo)&&!c.isGone;
+    if(fMode==='active')    return isActive(c.validTo);
+    if(fMode==='expired')   return !isActive(c.validTo);
+    if(fMode==='soon')      return isExpiringSoon(c.validTo);
     if(fMode==='new')       return c.isNew;
-    if(fMode==='gone')      return c.isGone;
+    if(fMode==='gone')      return true; // already the gone-only list
     if(fMode==='migration') return c.isMigrated;
-    return !c.isGone;
+    return true; // 'all'
   });
 
   // extra filters
@@ -780,7 +807,7 @@ function apply(){
     document.getElementById('navBar').style.display='none';
   }
 
-  document.getElementById('fltCount').textContent=filtered.length+' / '+(raw.size-goneAll);
+  document.getElementById('fltCount').textContent=filtered.length+' / '+((fMode==='gone')?goneAll.length:raw.size);
   page=1;
   render();
 }
@@ -944,7 +971,7 @@ window.showDetails=function(reg){
   document.querySelectorAll('.car-card').forEach(c=>c.classList.remove('selected-card'));
   const el=event?.currentTarget;
   if(el) el.classList.add('selected-card');
-  const c=raw.get(reg);
+  const c=raw.get(reg)||goneCars.get(reg);
   if(!c) return;
   const t=UI[lang];
   const ex=vehicleExtra.get(reg)||{};
@@ -1200,9 +1227,9 @@ document.getElementById('fAll').addEventListener('click',()=>setMode('all'));
 document.getElementById('fAct').addEventListener('click',()=>setMode('active'));
 document.getElementById('fExp').addEventListener('click',()=>setMode('expired'));
 document.getElementById('fSoon').addEventListener('click',()=>setMode('soon'));
-document.getElementById('fNew').addEventListener('click',()=>{if(base2Loaded)setMode('new');});
-document.getElementById('fGone').addEventListener('click',()=>{if(base2Loaded)setMode('gone');});
-document.getElementById('fMig').addEventListener('click',()=>{if(base2Loaded)setMode('migration');});
+document.getElementById('fNew').addEventListener('click',()=>{if(base1Loaded)setMode('new');});
+document.getElementById('fGone').addEventListener('click',()=>{if(base1Loaded)setMode('gone');});
+document.getElementById('fMig').addEventListener('click',()=>{if(base1Loaded)setMode('migration');});
 </script>
 </body>
 </html>
