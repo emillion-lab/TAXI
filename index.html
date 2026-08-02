@@ -598,6 +598,34 @@ async function autoFetch(url,slot){
 (async()=>{
   let base=window.location.href.replace(/\/[^\/]*$/,'/');
   if(!base.startsWith('http')) base='https://emillion-lab.github.io/TAXI/';
+
+  // Discover the two most recent dated JSON data files automatically
+  // (registry-pull writes a new dated file each month; no more hardcoded names).
+  try{
+    const apiRes=await fetch('https://api.github.com/repos/emillion-lab/TAXI/contents/');
+    if(!apiRes.ok) throw new Error('GitHub API '+apiRes.status);
+    const files=await apiRes.json();
+    const dated=files
+      .filter(f=>f.type==='file'&&/\.json$/i.test(f.name))
+      .map(f=>{
+        const dStr=extractDateFromFilename(f.name);
+        const m=dStr&&dStr.match(/(\d+)\.(\d+)\.(\d+)/);
+        return {name:f.name, ts:m?new Date(+m[3],+m[2]-1,+m[1]).getTime():0};
+      })
+      .filter(f=>f.ts>0)
+      .sort((a,b)=>b.ts-a.ts);
+
+    if(dated.length>=2){
+      await autoFetch(base+dated[1].name,1); // second-newest -> baseline
+      const ok=await autoFetch(base+dated[0].name,2); // newest -> current
+      if(ok){ setMode('active'); return; }
+    } else if(dated.length===1){
+      const ok=await autoFetch(base+dated[0].name,1);
+      if(ok){ setMode('active'); return; }
+    }
+  }catch(e){ console.error('[auto-discover]',e.message); }
+
+  // Fallback if GitHub API is unreachable/rate-limited
   await autoFetch(base+'Sofia_24.03.2026.json',1);
   const ok=await autoFetch(base+'taxi_data_Sofia20.07.2026.json',2);
   if(ok) setMode('active');
