@@ -268,6 +268,8 @@ let vehicleExtra=new Map();  // reg -> {firstRegDate, ownership, muni, operatorI
 let driverMap=new Map();     // reg -> [{driverName, uvltaNumber, uvltaEndDate, contractDate, forOwnAccount}]
 let base1Loaded=false;       // БАЗА 1 (baseline) loaded — enables NEW/GONE/MIGRATED comparison
 let base2Loaded=false;       // БАЗА 2 (current) loaded — required for any stats at all
+let loadingSlot=1;           // which slot is currently being parsed
+let slot2SeenRegs=new Set(); // regs already refreshed during the current БАЗА 2 parse
 let filtered=[];
 let page=1;
 const pageSize=50;
@@ -353,7 +355,18 @@ function extractEntries(item){
     if(!reg) return;
     out.push({reg, op, model, validTo, driver:driverName||'ТИТУЛЯР'});
 
-    // vehicleExtra (only set once per reg; prefer richer data)
+    // БАЗА 2 is authoritative: the first time we meet a reg during the slot-2 parse we
+    // discard whatever БАЗА 1 left behind, so ownership/municipality/drivers/licences
+    // always reflect the current registry rather than the old baseline file.
+    const refreshFromCurrent=(loadingSlot===2&&!slot2SeenRegs.has(reg));
+    if(refreshFromCurrent){
+      slot2SeenRegs.add(reg);
+      vehicleExtra.delete(reg);
+      driverMap.delete(reg);
+      licenseHistory.delete(reg);
+    }
+
+    // vehicleExtra (only set once per reg within a slot; prefer richer data)
     if(!vehicleExtra.has(reg)){
       vehicleExtra.set(reg,{firstRegDate, ownership:ownership||'', muni, operatorIdn:opIdn, opLicNum});
     } else {
@@ -498,6 +511,8 @@ function updateFileLabel(slot,fname,dateStr){
 ================================================ */
 function processJson(json,slot){
   const list=Array.isArray(json)?json:(json.data||json.items||[]);
+  loadingSlot=slot;
+  slot2SeenRegs.clear();
 
   if(slot===1){
     base1Raw.clear(); oldKeys.clear();
@@ -576,7 +591,11 @@ function processJson(json,slot){
   // Populate municipality filter
   buildMuniFilter();
   // Show/hide UVLTA chip
-  const anyUvlta=Array.from(driverMap.values()).some(ds=>ds.some(d=>d.uvltaEndDate&&d.uvltaEndDate<todayStart));
+  // only consider the current fleet (raw / БАЗА 2) — departed vehicles must not drive this
+  const anyUvlta=Array.from(raw.keys()).some(reg=>{
+    const ds=driverMap.get(reg);
+    return ds&&ds.some(d=>d.uvltaEndDate&&d.uvltaEndDate<todayStart);
+  });
   document.getElementById('fltUvltaWrap').style.display=anyUvlta?'flex':'none';
 
   apply();
@@ -807,7 +826,11 @@ function apply(){
     document.getElementById('navBar').style.display='none';
   }
 
-  document.getElementById('fltCount').textContent=filtered.length+' / '+((fMode==='gone')?goneAll.length:raw.size);
+  const denom=(fMode==='gone')?goneAll.length
+             :(fMode==='migration')?migAll
+             :(fMode==='new')?newAll
+             :raw.size;
+  document.getElementById('fltCount').textContent=filtered.length+' / '+denom;
   page=1;
   render();
 }
@@ -820,7 +843,7 @@ function render(){
   const t=UI[lang];
 
   // Migration matrix
-  if(fMode==='migration'&&!document.getElementById('search').value){
+  if(fMode==='migration'){
     const migStats={};
     // build per-key car list too
     const migCars={};
