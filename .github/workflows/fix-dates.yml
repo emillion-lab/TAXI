@@ -1,0 +1,31 @@
+name: Fix Dates
+on:
+  workflow_dispatch:
+  schedule: [{ cron: '*/20 * * * *' }]
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply date fix
+        run: |
+          if grep -q "return new Date(2000,0,1,0,0,0,0)" index.html; then
+            python3 scripts/fix_dates.py
+            python3 -c "
+          import re,io
+          h=io.open('index.html',encoding='utf-8').read()
+          m=re.search(r'<script>(.*)</script>',h,re.S)
+          io.open('/tmp/c.js','w',encoding='utf-8').write(m.group(1))
+          "
+            node --check /tmp/c.js && echo 'JS SYNTAX OK'
+            grep -c 'new Date(2000' index.html || echo 'няма останали фалшиви дати'
+            git config user.name ci; git config user.email ci@taxi
+            git add index.html
+            git commit -m "fix: missing licence date no longer shown as expired 1.01.2000 [skip ci]"
+            git fetch origin main && git rebase origin/main || true
+            git push
+          else
+            echo "already fixed"
+          fi
