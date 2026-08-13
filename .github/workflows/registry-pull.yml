@@ -16,11 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Pull ИААА taxi register (страниците като твоя скрейпър, без прокси)
+      - name: Pull ИААА taxi register — цяла България (Q='' = без филтър по град/област)
         run: |
           python3 - <<'PYEOF'
           import urllib.request, json, time, datetime, sys
-          Q = 'София'
+          Q = ''  # празно = цяла България, потвърдено от Емил и от отговора на API-то
           STEP = 100
           start, all_rows = 1, []
           while True:
@@ -43,11 +43,11 @@ jobs:
               start += STEP
               time.sleep(0.6)
 
-          if len(all_rows) < 100:
-              print('Подозрително малко записи — не записвам.'); sys.exit(1)
+          if len(all_rows) < 500:
+              print('Подозрително малко записи за национален обхват — не записвам.'); sys.exit(1)
 
           t = datetime.date.today()
-          fname = f'taxi_data_Sofia{t.day}.{t.month}.{t.year}.json'
+          fname = f'taxi_data_Bulgaria{t.day}.{t.month}.{t.year}.json'
           json.dump(all_rows, open(fname, 'w', encoding='utf-8'), ensure_ascii=False)
           print('Записано:', fname, '| записи:', len(all_rows))
           open('registry-pull-report.txt', 'w', encoding='utf-8').write(
@@ -58,4 +58,4 @@ jobs:
         run: |
           git config user.name registry-bot; git config user.email registry-bot@taxi
           git add taxi_data_*.json registry-pull-report.txt
-          git diff --cached --quiet || (git commit -m "registry: monthly auto-pull from ИААА" && git push)
+          git diff --cached --quiet || (git commit -m "registry: monthly auto-pull, цяла България" && git push)
