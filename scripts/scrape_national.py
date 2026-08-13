@@ -14,8 +14,10 @@ import os
 import sys
 import time
 import urllib.request
+import urllib.parse
 import urllib.error
 import datetime
+
 
 API = 'https://taxireg.infosys.bg/TaxiReg/api/custom/publicregister/query'
 UA = 'Mozilla/5.0 (compatible; fishtaxi-registry-sync/1.0)'
@@ -39,8 +41,6 @@ def fetch_page(q, row_begin, row_end, retries=4):
 
 
 def scrape(q, step, delay, max_pages=None):
-    import urllib.parse as _up
-    globals()['urllib'].parse = _up
     all_rows = []
     start = 1
     page = 0
