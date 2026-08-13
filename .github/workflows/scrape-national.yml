@@ -1,0 +1,55 @@
+name: scrape-national
+on:
+  workflow_dispatch:
+    inputs:
+      test_only:
+        description: 'Тестов режим (3 страници, без запис)'
+        type: boolean
+        default: true
+      step:
+        description: 'Записи на страница'
+        type: string
+        default: '200'
+      q:
+        description: 'Филтър по град — ОСТАВИ ПРАЗНО за цяла България'
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      TEST_ONLY: ${{ inputs.test_only }}
+      SCRAPE_STEP: ${{ inputs.step }}
+      SCRAPE_Q: ${{ inputs.q }}
+      SCRAPE_DELAY: '0.4'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scrape
+        run: python3 scripts/scrape_national.py
+
+      - name: Commit (само при пълен режим)
+        if: inputs.test_only == 'false'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "*.json" registry-pull-report.txt
+          if git diff --cached --quiet; then
+            echo "няма нов файл"
+            exit 0
+          fi
+          git commit -m "national scrape: нов национален регистър"
+          for i in 1 2 3; do
+            git pull --rebase --autostash || true
+            if git push; then
+              echo "качено от опит $i"
+              exit 0
+            fi
+            sleep $((i * 5))
+          done
+          exit 1
