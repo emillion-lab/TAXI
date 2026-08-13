@@ -33,17 +33,18 @@ jobs:
       - name: Scrape
         run: python3 scripts/scrape_national.py
 
-      - name: Commit (само при пълен режим)
-        if: inputs.test_only == 'false'
+      - name: Commit (винаги качва debug.txt; json/report само при успешно пълно теглене)
+        if: always()
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "*.json" registry-pull-report.txt
+          git add debug.txt
+          git add "*.json" registry-pull-report.txt 2>/dev/null || true
           if git diff --cached --quiet; then
-            echo "няма нов файл"
+            echo "няма промяна"
             exit 0
           fi
-          git commit -m "national scrape: нов национален регистър"
+          git commit -m "scrape debug: диагностика на последния run"
           for i in 1 2 3; do
             git pull --rebase --autostash || true
             if git push; then
