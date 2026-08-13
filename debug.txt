@@ -1,0 +1,8 @@
+RAW ENV: TEST_ONLY='true' SCRAPE_Q='' SCRAPE_STEP='50' SCRAPE_DELAY='0.4'
+резолвнато: test_only=True, label=Bulgaria, step=50, delay=0.4, max_pages=3
+първа заявка URL: https://taxireg.infosys.bg/TaxiReg/api/custom/publicregister/query?rowBegin=1&rowEnd=50&q=&sort=createdAt&order=desc
+първи 500 символа отговор: '[{"taxiOperatorLicenseId":14515,"licenseNumber":"РАZ08-4","licenseDate":"2022-07-07T21:00:00.000Z","operatorIdn":"112010850","operatorName":"НИМФИД-НИКОЛАЙ НЕНОВ ЕТ","registratorMunicipalityName":"Община Велинград, област Пазарджик, гр. Велинград, Адрес: УЛ.БАХ №4","vehicles":[{"ownership":"собствено","taxiOperatorLicenseId":14515,"registerNumber":"РА6778КТ","markAndModel":"ДАЧИЯ САНДЕРО","firstRegistrationDate":"2015-01-25T22:00:00.000Z","createdAt":"2022-07-08T07:42:45.000Z"}],"drivers":[{"tax'
+грешка (ако има): None
+спрях на max_pages=3 (тестов режим)
+общо събрани записи: 150
+--- ТЕСТОВ РЕЖИМ: не записвам основния файл ---
