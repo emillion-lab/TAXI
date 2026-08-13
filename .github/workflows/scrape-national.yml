@@ -5,7 +5,7 @@ on:
       test_only:
         description: 'Тестов режим (3 страници, без запис)'
         type: boolean
-        default: true
+        default: false
       step:
         description: 'Записи на страница'
         type: string
