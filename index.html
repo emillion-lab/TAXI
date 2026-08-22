@@ -664,7 +664,9 @@ async function autoFetch(url,slot){
     if(!apiRes.ok) throw new Error('GitHub API '+apiRes.status);
     const files=await apiRes.json();
     const dated=files
-      .filter(f=>f.type==='file'&&/\.json$/i.test(f.name))
+      // TAXI = само София. Национални файлове (Bulgaria_*.json) стоят в корена,
+      // но НЕ участват в сравнението — иначе всичко извън София става "НОВ".
+      .filter(f=>f.type==='file'&&/\.json$/i.test(f.name)&&/(sofia|софия)/i.test(f.name))
       .map(f=>{
         const dStr=extractDateFromFilename(f.name);
         const m=dStr&&dStr.match(/(\d+)\.(\d+)\.(\d+)/);
