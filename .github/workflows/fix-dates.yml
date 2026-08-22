@@ -1,7 +1,10 @@
 name: Fix Dates
 on:
   workflow_dispatch:
-  schedule: [{ cron: '*/20 * * * *' }]
+  push:
+    paths:
+      - 'index.html'
+      - 'scripts/fix_dates.py'
 permissions:
   contents: write
 jobs:
