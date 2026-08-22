@@ -1,6 +1,10 @@
 name: Patch Scope Sofia
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'index.html'
+      - 'scripts/patch_scope_sofia.py'
 permissions:
   contents: write
 jobs:
