@@ -49,7 +49,7 @@ jobs:
               print('Подозрително малко записи — не записвам.'); sys.exit(1)
 
           t = datetime.date.today()
-          fname = f'taxi_data_Sofia{t.day}.{t.month}.{t.year}.json'
+          fname = f'Sofia_{t.isoformat()}.json'
           json.dump(all_rows, open(fname, 'w', encoding='utf-8'), ensure_ascii=False)
           print('Записано:', fname, '| записи:', len(all_rows))
           open('registry-pull-report.txt', 'w', encoding='utf-8').write(
@@ -59,5 +59,5 @@ jobs:
       - name: Commit
         run: |
           git config user.name registry-bot; git config user.email registry-bot@taxi
-          git add taxi_data_*.json registry-pull-report.txt
+          git add Sofia_*.json registry-pull-report.txt
           git diff --cached --quiet || (git commit -m "registry: monthly auto-pull, София" && git push)
