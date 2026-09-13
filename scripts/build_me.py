@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Преизчислява данните на ME/index.html от всички снимки Sofia_*.json.
+Преизчислява данните на ME/index.html от всички снимки Sofia_*.json(.gz).
 
 ME остава един самостоятелен файл — скриптът само подменя реда `const D={...};`
 с прясно изчислен обект. Кола се брои за преместена само ако същият
 регистрационен номер стои под друга фирма в следващата снимка.
 """
-import json, glob, re, io, collections
+import json, glob, gzip, re, io, collections
 
 TARGET = 'ТАКСИМИ СОФИЯ ЕООД'
 PAGE = 'ME/index.html'
 
 
 def load(path):
-    data = json.load(io.open(path, encoding='utf-8'))
+    opener = gzip.open if path.endswith('.gz') else io.open
+    with opener(path, 'rt', encoding='utf-8') as fh:
+        data = json.load(fh)
     fleet = {}
     for op in data:
         name = (op.get('operatorName') or '').strip()
@@ -26,7 +28,10 @@ def load(path):
 
 
 snaps = []
-for path in sorted(glob.glob('Sofia_*.json')):
+paths = {}
+for path in glob.glob('Sofia_*.json') + glob.glob('Sofia_*.json.gz'):
+    paths[path[:-3] if path.endswith('.gz') else path] = path  # .gz бие суровия
+for path in [paths[k] for k in sorted(paths)]:
     m = re.search(r'(\d{4}-\d{2}-\d{2})', path)
     if not m:
         print('прескачам (няма ISO дата в името):', path)
