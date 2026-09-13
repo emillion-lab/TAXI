@@ -4,8 +4,9 @@
 Преизчислява данните на ME/index.html от всички снимки Sofia_*.json(.gz).
 
 ME остава един самостоятелен файл — скриптът само подменя реда `const D={...};`
-с прясно изчислен обект. Кола се брои за преместена само ако същият
-регистрационен номер стои под друга фирма в следващата снимка.
+с прясно изчислен обект и освежава двата етикета с дати. Кола се брои за
+преместена само ако същият регистрационен номер стои под друга фирма в
+следващата снимка.
 """
 import json, glob, gzip, re, io, collections
 
@@ -67,6 +68,15 @@ new_html, n = re.subn(r'(?m)^const D=\{.*\};$', 'const D=' + payload + ';',
                       html, count=1)
 if n != 1:
     raise SystemExit('ГРЕШКА: не намирам реда `const D={...};` в ' + PAGE)
+
+# Двата етикета под числата носят дати — да не изостават от данните.
+dm = lambda d: d[8:10] + '.' + d[5:7]
+new_html = re.sub(r'(<b id="kNow">—</b><span>коли на )\d\d\.\d\d(</span>)',
+                  lambda m: m.group(1) + dm(series[-1]['date']) + m.group(2),
+                  new_html, count=1)
+new_html = re.sub(r'(<b id="kYtd">—</b><span>от )\d\d\.\d\d(</span>)',
+                  lambda m: m.group(1) + dm(series[0]['date']) + m.group(2),
+                  new_html, count=1)
 
 io.open(PAGE, 'w', encoding='utf-8').write(new_html)
 print('ME обновена: %d снимки, %s – %s, парк %d коли'
