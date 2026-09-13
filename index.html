@@ -27,6 +27,8 @@
     .file-lbl:hover{background:#334155}
     .file-lbl.loaded{border:1px solid var(--accent);color:var(--accent)}
     .file-lbl input{display:none}
+    .base-pick{font-size:11px;font-weight:900;color:var(--muted);padding:3px 7px;background:var(--line);border-radius:4px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+    .base-pick select{background:var(--panel);color:var(--text);border:1px solid var(--accent);border-radius:3px;font-size:11px;font-weight:700;padding:2px 4px;max-width:120px}
     #resetBtn{background:var(--red);border:none;color:#fff;border-radius:6px;font-weight:900;font-size:13px;padding:5px 12px;cursor:pointer}
 
     /* STATS — 7 колони */
@@ -141,6 +143,8 @@
       <div class="io-zone">
         <label class="file-lbl" id="l1">📂 <span id="lbl1txt">БАЗА 1</span><input type="file" id="file1" accept=".json,.gz"></label>
         <label class="file-lbl" id="l2">📂 <span id="lbl2txt">БАЗА 2</span><input type="file" id="file2" accept=".json,.gz"></label>
+        <label class="base-pick">1<select id="sel1" onchange="pickBases()"></select></label>
+        <label class="base-pick">2<select id="sel2" onchange="pickBases()"></select></label>
         <button id="resetBtn" onclick="location.reload()">RESET</button>
       </div>
     </div>
@@ -666,6 +670,38 @@ async function autoFetch(url,slot){
   }catch(e){ console.error('[AF'+slot+']',e.message); return false; }
 }
 
+/* ================================================
+   ИЗБОР НА БАЗИ измежду свалените снимки
+================================================ */
+let DATED=[], BASE_URL='';
+
+function fillBasePickers(cur1,cur2){
+  [['sel1',cur1],['sel2',cur2]].forEach(function(pair){
+    const s=document.getElementById(pair[0]);
+    if(!s) return;
+    s.innerHTML='';
+    DATED.forEach(function(f){          // DATED е сортиран най-нов отгоре
+      const o=document.createElement('option');
+      o.value=f.name;
+      o.textContent=(extractDateFromFilename(f.name)||f.name).replace(' г.','');
+      if(f.name===pair[1]) o.selected=true;
+      s.appendChild(o);
+    });
+  });
+}
+
+async function pickBases(){
+  const n1=document.getElementById('sel1').value;
+  const n2=document.getElementById('sel2').value;
+  if(!n1||!n2) return;
+  if(n1===n2){ alert('Избери две различни снимки.'); return; }
+  document.body.style.cursor='progress';
+  await autoFetch(BASE_URL+n1,1);       // редът има значение: 1, после 2
+  const ok=await autoFetch(BASE_URL+n2,2);
+  document.body.style.cursor='';
+  if(ok) setMode('active');
+}
+
 (async()=>{
   let base=window.location.href.replace(/\/[^\/]*$/,'/');
   if(!base.startsWith('http')) base='https://emillion-lab.github.io/TAXI/';
@@ -690,9 +726,11 @@ async function autoFetch(url,slot){
       .filter(f=>f.ts>0)
       .sort((a,b)=>b.ts-a.ts);
 
+    DATED=dated; BASE_URL=base;
     if(dated.length>=2){
       const oldest=dated[dated.length-1]; // earliest available (e.g. March) — long baseline
       const newest=dated[0];              // most recent — current snapshot
+      fillBasePickers(oldest.name,newest.name);
       await autoFetch(base+oldest.name,1);
       const ok=await autoFetch(base+newest.name,2);
       if(ok){ setMode('active'); return; }
