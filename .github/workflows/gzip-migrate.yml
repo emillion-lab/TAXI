@@ -1,0 +1,32 @@
+name: Gzip Migrate
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Convert snapshots and teach the panel to read them
+        run: |
+          du -sh --exclude=.git . | sed 's/^/преди: /'
+          python3 scripts/gzip_snapshots.py
+          python3 scripts/patch_gz.py
+          python3 scripts/build_me.py
+          for f in index.html ME/index.html; do
+            python3 -c "
+          import re,io,sys
+          h=io.open('$f',encoding='utf-8').read()
+          m=re.search(r'<script>(.*)</script>',h,re.S)
+          io.open('/tmp/c.js','w',encoding='utf-8').write(m.group(1))
+          "
+            node --check /tmp/c.js && echo "JS SYNTAX OK: $f"
+          done
+          du -sh --exclude=.git . | sed 's/^/след: /'
+          git config user.name ci; git config user.email ci@taxi
+          git add -A
+          git diff --cached --quiet && echo 'нищо за commit' && exit 0
+          git commit -m "snapshots: .json -> .json.gz; панелът разопакова в браузъра [skip ci]"
+          git fetch origin main && git rebase origin/main || true
+          git push
