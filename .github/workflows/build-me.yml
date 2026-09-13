@@ -1,0 +1,26 @@
+name: Build ME
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rebuild ME page data
+        run: |
+          python3 scripts/build_me.py
+          python3 -c "
+          import re,io
+          h=io.open('ME/index.html',encoding='utf-8').read()
+          m=re.search(r'<script>(.*)</script>',h,re.S)
+          io.open('/tmp/me.js','w',encoding='utf-8').write(m.group(1))
+          "
+          node --check /tmp/me.js && echo 'JS SYNTAX OK'
+          git config user.name ci; git config user.email ci@taxi
+          git add ME/index.html
+          git diff --cached --quiet && echo 'нищо за commit' && exit 0
+          git commit -m "ME: преизчислено от текущите снимки [skip ci]"
+          git fetch origin main && git rebase origin/main || true
+          git push
