@@ -85,6 +85,7 @@
     .v-ok{background:rgba(34,197,94,0.15);color:var(--accent);border:1px solid var(--accent)}
     .v-warn{background:rgba(249,115,22,0.15);color:var(--orange);border:1px solid var(--orange)}
     .v-err{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid var(--red)}
+    .v-old{background:rgba(148,163,184,0.15);color:var(--muted);border:1px solid var(--muted)}
     .drivers{margin-top:6px;font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .car-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
     .ctag{font-size:10px;font-weight:900;padding:1px 6px;border-radius:3px}
@@ -161,6 +162,7 @@
     <div class="stat-item" id="fNew"><span class="stat-val" id="sNew" style="color:var(--highlight)">0</span><span class="stat-lbl" data-bg="★ НОВИ" data-en="★ NEW">★ НОВИ</span></div>
     <div class="stat-item" id="fGone"><span class="stat-val" id="sGone" style="color:var(--orange)">0</span><span class="stat-lbl" data-bg="↩ ТРЪГНАЛИ" data-en="↩ LEFT">↩ ТРЪГНАЛИ</span></div>
     <div class="stat-item" id="fMig"><span class="stat-val" id="sMig" style="color:var(--blue)">0</span><span class="stat-lbl" style="color:var(--blue)" data-bg="⇄ МИГРАЦИЯ" data-en="⇄ MIGRATED">⇄ МИГРАЦИЯ</span></div>
+    <div class="stat-item" id="fOld"><span class="stat-val" id="sOld" style="color:var(--muted)">0</span><span class="stat-lbl" style="color:var(--muted)" data-bg="⌛ СТАР ПЛАСТ" data-en="⌛ LEGACY">⌛ СТАР ПЛАСТ</span></div>
   </div>
 </header>
 
@@ -278,6 +280,7 @@ let base1Loaded=false;       // БАЗА 1 (baseline) loaded — enables NEW/GON
 let base2Loaded=false;       // БАЗА 2 (current) loaded — required for any stats at all
 let loadingSlot=1;           // which slot is currently being parsed
 let slot2SeenRegs=new Set(); // regs already refreshed during the current БАЗА 2 parse
+let legacyRegs=new Set();    // СТАР ПЛАСТ — коли без нито един лицензен запис под своята фирма
 let filtered=[];
 let page=1;
 const pageSize=50;
@@ -422,28 +425,53 @@ function extractEntries(item){
     }
   };
 
-  // Shape A: taxiLicensesVehiclesDrivers (full history)
+  // Shape A: `vehicles` казва коя фирма държи колата ДНЕС;
+  // taxiLicensesVehiclesDrivers дава лиценза, срока и шофьора към нея.
+  // Лицензни редове за номера, които ги няма в `vehicles`, са история на
+  // заминали коли и се пропускат — иначе колата се брои на старата фирма.
   const vList=item.taxiLicensesVehiclesDrivers;
-  if(Array.isArray(vList)&&vList.length>0){
+  const fleet=item.vehicles;
+  if(Array.isArray(vList)&&vList.length>0&&Array.isArray(fleet)&&fleet.length>0){
+    const licByReg=new Map();
     vList.forEach(vData=>{
-      const v=vData.taxiLicenseVehicle||{};
-      const reg=normReg(v.registerNumber||v.regNumber||'');
+      const reg=normReg((vData.taxiLicenseVehicle||{}).registerNumber||(vData.taxiLicenseVehicle||{}).regNumber||'');
       if(!reg) return;
-      const model=(v.markAndModel||v.model||'—').toString().trim()||'—';
-      const lic=vData.taxiLicense||{};
-      const validTo=parseValidTo(lic.validTo||lic.validToDate||vData.validTo);
-      const driverObj=vData.taxiLicenseDriver||{};
-      const hasOwnDriver=!!(driverObj.driverName||'').trim();
-      const driverName=(hasOwnDriver?driverObj.driverName:'ТИТУЛЯР').toString().trim();
-      // Find matching driver entry in driverList for UVLTA info
-      const specificDriver=hasOwnDriver
-        ? (driverList.find(d=>d.name===driverName)||{name:driverName, uvltaNumber:'', uvltaEndDate:null, contractDate:null, forOwnAccount:false})
-        : false;
-      const ownership=(v.ownership||'').toLowerCase();
-      const firstRegDate=parseDate(v.firstRegistrationDate);
-      const licVF=parseDate(lic.validFrom);
-      const licVT=parseValidTo(lic.validTo||lic.validToDate);
-      processVehicle(reg, model, validTo, driverName, ownership, firstRegDate, lic.licenseNumber||'', licVF, licVT, specificDriver);
+      if(!licByReg.has(reg)) licByReg.set(reg,[]);
+      licByReg.get(reg).push(vData);
+    });
+
+    fleet.forEach(fv=>{
+      const reg=normReg(fv.registerNumber||fv.regNumber||'');
+      if(!reg) return;
+      const fleetModel=(fv.markAndModel||'—').toString().trim()||'—';
+      const fleetOwn=(fv.ownership||'').toLowerCase();
+      const fleetFirst=parseDate(fv.firstRegistrationDate);
+      const rows=licByReg.get(reg);
+
+      if(!rows||!rows.length){
+        // СТАР ПЛАСТ: кола без нито един лицензен запис под своята фирма
+        legacyRegs.add(reg);
+        processVehicle(reg, fleetModel, null, 'ТИТУЛЯР', fleetOwn, fleetFirst, '', null, null);
+        return;
+      }
+
+      rows.forEach(vData=>{
+        const v=vData.taxiLicenseVehicle||{};
+        const model=(v.markAndModel||v.model||fleetModel).toString().trim()||fleetModel;
+        const lic=vData.taxiLicense||{};
+        const validTo=parseValidTo(lic.validTo||lic.validToDate||vData.validTo);
+        const driverObj=vData.taxiLicenseDriver||{};
+        const hasOwnDriver=!!(driverObj.driverName||'').trim();
+        const driverName=(hasOwnDriver?driverObj.driverName:'ТИТУЛЯР').toString().trim();
+        const specificDriver=hasOwnDriver
+          ? (driverList.find(d=>d.name===driverName)||{name:driverName, uvltaNumber:'', uvltaEndDate:null, contractDate:null, forOwnAccount:false})
+          : false;
+        const ownership=(v.ownership||fleetOwn||'').toLowerCase();
+        const firstRegDate=parseDate(v.firstRegistrationDate)||fleetFirst;
+        const licVF=parseDate(lic.validFrom);
+        const licVT=parseValidTo(lic.validTo||lic.validToDate);
+        processVehicle(reg, model, validTo, driverName, ownership, firstRegDate, lic.licenseNumber||'', licVF, licVT, specificDriver);
+      });
     });
     return out;
   }
@@ -460,6 +488,7 @@ function extractEntries(item){
       const driverName=(vData.driverName||vData.taxiLicenseDriver?.driverName||'ТИТУЛЯР').toString().trim();
       const ownership=(v.ownership||vData.ownership||'').toLowerCase();
       const firstRegDate=parseDate(v.firstRegistrationDate||vData.firstRegistrationDate);
+      if(!validTo) legacyRegs.add(reg);
       processVehicle(reg, model, validTo, driverName, ownership, firstRegDate, '', null, null);
     });
     return out;
@@ -537,6 +566,7 @@ function processJson(json,slot){
   const list=Array.isArray(json)?json:(json.data||json.items||[]);
   loadingSlot=slot;
   slot2SeenRegs.clear();
+  legacyRegs.clear();
 
   if(slot===1){
     base1Raw.clear(); oldKeys.clear();
@@ -607,6 +637,7 @@ function processJson(json,slot){
     } else {
       raw.forEach(car=>{ car.isNew=false; car.isMigrated=false; });
     }
+    raw.forEach((car,reg)=>{ car.isLegacy=legacyRegs.has(reg); });
   }
 
   // Sort license history per vehicle newest first
@@ -796,7 +827,7 @@ function setMode(m){
   document.querySelectorAll('.stat-item').forEach(x=>{
     x.classList.remove('active','active-mig','active-exp');
   });
-  const ids={all:'fAll',active:'fAct',expired:'fExp',soon:'fSoon',new:'fNew',gone:'fGone',migration:'fMig'};
+  const ids={all:'fAll',active:'fAct',expired:'fExp',soon:'fSoon',new:'fNew',gone:'fGone',migration:'fMig',old:'fOld'};
   const cls=m==='migration'?'active-mig':(m==='soon'?'active-exp':'active');
   if(ids[m]) document.getElementById(ids[m]).classList.add(cls);
   document.getElementById('firmsWrapper').style.display=(m==='migration')?'none':'flex';
@@ -845,7 +876,11 @@ function rebuildFirms(carsInScope){
 ================================================ */
 function apply(){
   const q=(document.getElementById('search').value||'').toLowerCase().trim();
-  const all=Array.from(raw.values());          // current fleet (БАЗА 2 only)
+  // Старият пласт стои настрани: тези коли нямат лицензен запис, затова
+  // не могат да бъдат нито валидни, нито изтекли — и не влизат в ОБЩО.
+  const everything=Array.from(raw.values());
+  const all=everything.filter(c=>!c.isLegacy);  // current fleet (БАЗА 2 only)
+  const oldAll=everything.filter(c=>c.isLegacy);
   const goneAll=Array.from(goneCars.values()); // departed since БАЗА 1 (reference only)
 
   const actAll  =all.filter(c=>isActive(c.validTo)).length;
@@ -854,7 +889,9 @@ function apply(){
   const migAll  =all.filter(c=>c.isMigrated).length;
   const soonAll =all.filter(c=>isExpiringSoon(c.validTo)).length;
 
-  document.getElementById('sAll').textContent  =raw.size;
+  document.getElementById('sAll').textContent  =all.length;
+  const oldEl=document.getElementById('sOld');
+  if(oldEl) oldEl.textContent=oldAll.length;
   document.getElementById('sAct').textContent  =actAll;
   document.getElementById('sExp').textContent  =expAll;
   document.getElementById('sSoon').textContent =soonAll;
@@ -867,7 +904,7 @@ function apply(){
 
   // choose source list: normal filters always work off the current fleet;
   // ТРЪГНАЛИ is the one view that shows the separate baseline-only list
-  const sourceList=(fMode==='gone')?goneAll:all;
+  const sourceList=(fMode==='gone')?goneAll:(fMode==='old')?oldAll:all;
 
   // search
   const base=sourceList.filter(c=>{
@@ -884,6 +921,7 @@ function apply(){
     if(fMode==='soon')      return isExpiringSoon(c.validTo);
     if(fMode==='new')       return c.isNew;
     if(fMode==='gone')      return true; // already the gone-only list
+    if(fMode==='old')       return true; // already the legacy-only list
     if(fMode==='migration') return c.isMigrated;
     return true; // 'all'
   });
@@ -901,9 +939,10 @@ function apply(){
   }
 
   const denom=(fMode==='gone')?goneAll.length
+             :(fMode==='old')?oldAll.length
              :(fMode==='migration')?migAll
              :(fMode==='new')?newAll
-             :raw.size;
+             :all.length;
   document.getElementById('fltCount').textContent=filtered.length+' / '+denom;
   page=1;
   render();
@@ -943,14 +982,14 @@ function render(){
           const act=isActive(c.validTo);
           const soon=isExpiringSoon(c.validTo);
           const border=act?(soon?'var(--highlight)':'var(--accent)'):'var(--red)';
-          const tagClass=act?(soon?'v-warn':'v-ok'):'v-err';
-          const tagText=act?(soon?t.expSoon:t.valid):t.expired_on;
+          const tagClass=!c.validTo?'v-old':(act?(soon?'v-warn':'v-ok'):'v-err');
+          const tagText=!c.validTo?(lang==='bg'?'БЕЗ ЛИЦЕНЗ':'NO LICENCE'):(act?(soon?t.expSoon:t.valid):t.expired_on);
           const dList=Array.from(c.drivers).join(', ')||'—';
           const ex=vehicleExtra.get(c.reg);
           const yrs=ex?carAgeYears(ex.firstRegDate):null;
           const isSel=selectedReg===c.reg?'selected-card':'';
           return `<div class="car-card ${isSel}" style="border-left:6px solid ${border};margin:0" onclick="showDetails('${c.reg}')">
-            <div class="v-tag ${tagClass}" style="font-size:9px;">${tagText} ${c.validTo.toLocaleDateString('bg-BG')}</div>
+            <div class="v-tag ${tagClass}" style="font-size:9px;">${tagText} ${c.validTo?c.validTo.toLocaleDateString('bg-BG'):''}</div>
             <div style="margin-bottom:4px;">
               <span class="plate" style="font-size:15px;">${safeText(c.reg)}</span>
               <span style="font-size:13px;margin-left:8px;color:var(--muted);font-weight:700;">${display(c.model)}</span>
@@ -1011,8 +1050,8 @@ function render(){
     const act=isActive(c.validTo);
     const soon=isExpiringSoon(c.validTo);
     const border=c.isGone?'var(--orange)':(c.isMigrated?'var(--blue)':(c.isNew?'var(--highlight)':(soon?'var(--highlight)':(act?'var(--accent)':'var(--red)'))));
-    const tagClass=act?(soon?'v-warn':'v-ok'):'v-err';
-    const tagText=act?(soon?t.expSoon:t.valid):t.expired_on;
+    const tagClass=!c.validTo?'v-old':(act?(soon?'v-warn':'v-ok'):'v-err');
+    const tagText=!c.validTo?(lang==='bg'?'БЕЗ ЛИЦЕНЗ':'NO LICENCE'):(act?(soon?t.expSoon:t.valid):t.expired_on);
     const dList=Array.from(c.drivers).filter(d=>d&&d!=='ТИТУЛЯР').join(', ')||'—';
     const isSel=selectedReg===c.reg?'selected-card':'';
 
@@ -1036,7 +1075,7 @@ function render(){
     if(soon) tags.push(`<span class="ctag ctag-soon">⏰ ${t.expSoon}</span>`);
 
     return `<div class="car-card ${isSel}" style="border-left:8px solid ${border}" onclick="showDetails('${c.reg}')">
-      <div class="v-tag ${tagClass}">${tagText} ${c.validTo.toLocaleDateString('bg-BG')}</div>
+      <div class="v-tag ${tagClass}">${tagText} ${c.validTo?c.validTo.toLocaleDateString('bg-BG'):''}</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:900;">#${start+i+1} | ${display(c.op)}</div>
       <div style="margin-bottom:5px;">
         <span class="plate">${safeText(c.reg)}</span>
@@ -1097,9 +1136,10 @@ window.showDetails=function(reg){
   const act=isActive(c.validTo);
   const soon=isExpiringSoon(c.validTo);
   const statusEl=document.getElementById('dStatus');
-  const statusText=act?(soon?t.expSoon:t.valid):t.expired_on;
-  statusEl.textContent=statusText+' '+c.validTo.toLocaleDateString('bg-BG');
-  statusEl.style.color=act?(soon?'var(--highlight)':'var(--accent)'):'var(--red)';
+  const statusText=!c.validTo?(lang==='bg'?'БЕЗ ЛИЦЕНЗЕН ЗАПИС':'NO LICENCE ON RECORD')
+                   :(act?(soon?t.expSoon:t.valid):t.expired_on);
+  statusEl.textContent=c.validTo?(statusText+' '+c.validTo.toLocaleDateString('bg-BG')):statusText;
+  statusEl.style.color=!c.validTo?'var(--muted)':(act?(soon?'var(--highlight)':'var(--accent)'):'var(--red)');
 
   // Ownership
   const owEl=document.getElementById('dOwnership');
@@ -1327,6 +1367,7 @@ document.getElementById('fSoon').addEventListener('click',()=>setMode('soon'));
 document.getElementById('fNew').addEventListener('click',()=>{if(base1Loaded)setMode('new');});
 document.getElementById('fGone').addEventListener('click',()=>{if(base1Loaded)setMode('gone');});
 document.getElementById('fMig').addEventListener('click',()=>{if(base1Loaded)setMode('migration');});
+document.getElementById('fOld').addEventListener('click',()=>setMode('old'));
 </script>
 </body>
 </html>
