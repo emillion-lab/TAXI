@@ -112,13 +112,15 @@ const net=after.reduce((a,i)=>a+i.in.length-i.out.length,0);
 document.getElementById('kAug').textContent=(net>0?'+':'')+net;
 
 /* ---- отговор за комисионните ---- */
-const straddle=IV.find(i=>i.from<COMM&&i.to>=COMM);
 const moves=after.reduce((a,i)=>a+i.moved,0);
-document.getElementById('commNote').innerHTML=
- `<b>След 26.08.2026</b> регистърът има само снимките от ${after.map(i=>full(i.to)).join(' и ')}. `
- +`В този отрязък има <b>${moves}</b> смени на фирма в цяла София — тоест ефект от новите комисионни още не се вижда. `
- +`Периодът ${full(straddle.from)}–${full(straddle.to)} обхваща датата, но почти целият му обем е отпреди нея. `
- +`За реален отговор трябва свежо теглене след 13.09.`;
+const inN=after.reduce((a,i)=>a+i.in.length,0), outN=after.reduce((a,i)=>a+i.out.length,0);
+const newN=after.reduce((a,i)=>a+i.new,0), goneN=after.reduce((a,i)=>a+i.gone,0);
+document.getElementById('commNote').innerHTML = after.length
+ ? `<b>След комисионните от 26.08</b> (снимки ${full(after[0].from)} – ${full(last.date)}): `
+  +`само <b>${moves}</b> коли в цяла София са сменили фирма, от тях ${inN} към и ${outN} от ТАКСИМИ `
+  +`(нето ${net>0?'+':''}${net}). Паркът на ТАКСИМИ се променя основно от нови регистрации: `
+  +`${newN} нови срещу ${goneN} излезли от регистъра.`
+ : 'Още няма снимка след комисионните от 26.08.';
 
 /* ---- периоди ---- */
 const row=(m,dir)=>`<div class="mv"><span class="p">${m.plate}</span>`
