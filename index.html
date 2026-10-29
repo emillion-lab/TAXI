@@ -738,6 +738,22 @@ async function pickBases(){
   if(ok) setMode('active');
 }
 
+/* Списък със снимките: първо манифестът snapshots.json от същия сайт (без
+   лимит на заявките), после GitHub API (неудостоверените заявки към него са
+   ограничени на час за IP адрес). Манифестът се обновява от registry-pull. */
+async function listFiles(base){
+  try{
+    const r=await fetch(base+'snapshots.json?v='+Date.now());
+    if(r.ok){
+      const names=await r.json();
+      if(Array.isArray(names)&&names.length) return names.map(n=>({type:'file',name:String(n)}));
+    }
+  }catch(e){ console.warn('[manifest]',e.message); }
+  const apiRes=await fetch('https://api.github.com/repos/emillion-lab/TAXI/contents/');
+  if(!apiRes.ok) throw new Error('GitHub API '+apiRes.status);
+  return await apiRes.json();
+}
+
 (async()=>{
   let base=window.location.href.replace(/\/[^\/]*$/,'/');
   if(!base.startsWith('http')) base='https://emillion-lab.github.io/TAXI/';
@@ -747,9 +763,7 @@ async function pickBases(){
   // БАЗА 1 = OLDEST available file (long baseline period for comparison).
   // БАЗА 2 = NEWEST available file (current, authoritative snapshot).
   try{
-    const apiRes=await fetch('https://api.github.com/repos/emillion-lab/TAXI/contents/');
-    if(!apiRes.ok) throw new Error('GitHub API '+apiRes.status);
-    const files=await apiRes.json();
+    const files=await listFiles(base);
     const dated=files
       // TAXI = само София. Национални файлове (Bulgaria_*.json) стоят в корена,
       // но НЕ участват в сравнението — иначе всичко извън София става "НОВ".
@@ -776,10 +790,8 @@ async function pickBases(){
     }
   }catch(e){ console.error('[auto-discover]',e.message); }
 
-  // Fallback if GitHub API is unreachable/rate-limited
-  await autoFetch(base+'Sofia_24.03.2026.json',1);
-  const ok=await autoFetch(base+'taxi_data_Sofia29.08.2026.json',2);
-  if(ok) setMode('active');
+  // И манифестът, и GitHub API са недостъпни — стари имена на файлове вече няма.
+  alert('Не мога да заредя снимките на регистъра. Опитай пак след малко или качи два файла ръчно (БАЗА 1 и БАЗА 2).');
 })();
 
 /* ================================================
