@@ -111,7 +111,9 @@ jobs:
       - name: Commit
         run: |
           git config user.name registry-bot; git config user.email registry-bot@taxi
-          git add Sofia_*.json.gz registry-pull-report.txt
+          # Манифест за панела: списък със снимките без обръщане към GitHub API.
+          python3 -c "import glob,json; open('snapshots.json','w',encoding='utf-8').write(json.dumps(sorted(glob.glob('Sofia_*.json.gz')), ensure_ascii=False))"
+          git add Sofia_*.json.gz registry-pull-report.txt snapshots.json
           git diff --cached --quiet || (git commit -m "registry: auto-pull, София" && git push)
 
       - name: Rebuild ME
