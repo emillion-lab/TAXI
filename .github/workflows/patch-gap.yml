@@ -1,0 +1,27 @@
+name: Patch Gap Moves
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patch and rebuild ME
+        run: |
+          python3 scripts/patch_gap.py
+          python3 scripts/build_me.py
+          python3 -c "
+          import re,io
+          h=io.open('ME/index.html',encoding='utf-8').read()
+          m=re.search(r'<script>(.*)</script>',h,re.S)
+          io.open('/tmp/c.js','w',encoding='utf-8').write(m.group(1))
+          "
+          node --check /tmp/c.js && echo 'JS SYNTAX OK'
+          git config user.name ci; git config user.email ci@taxi
+          git add scripts/build_me.py ME/index.html
+          git diff --cached --quiet && echo 'нищо за commit' && exit 0
+          git commit -m "fix: смените на фирма се хващат и през пропуск до 60 дни; подробна бележка за комисионните [skip ci]"
+          git fetch origin main && git rebase origin/main || true
+          git push
