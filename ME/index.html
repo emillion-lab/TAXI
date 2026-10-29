@@ -138,7 +138,7 @@ const startCnt=(S.find(p=>p.date===after[0].from)||first).count, dFleet=last.cou
 const P=t=>'<p style="margin:0 0 9px">'+t+'</p>';
 document.getElementById('commNote').innerHTML = !after.length
  ? 'Още няма снимка след комисионните от 26.08.'
- : P(`<b>Какво се случи след комисионните от 26.08?</b> Сравнени са ${after.length} снимки между ${full(after[0].from)} и ${full(last.date)} (${Math.round(days)} дни). `
+ : P(`<b>Какво се случи след комисионните от 26.08?</b> Сравнени са ${after.length+1} снимки между ${full(after[0].from)} и ${full(last.date)} (${Math.round(days)} дни). `
     +`В цяла София само <b>${moves}</b> коли са сменили фирма — около ${Math.round(rAfter)} на месец, темп ${cmp}. `
     +(rBefore!==null&&rAfter>rBefore*1.25?`Движението е по-интензивно от преди — виж посоките по-долу.`:`Масов преход на коли между фирми не се вижда.`))
   +P(`<b>ТАКСИМИ:</b> получила е ${inN} коли от други фирми и е дала ${outN} (нето ${sg(net)}). `
