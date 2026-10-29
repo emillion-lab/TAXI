@@ -1,0 +1,19 @@
+name: Patch Legacy Banner
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add legacy banner
+        run: |
+          python3 scripts/patch_legacy.py
+          git config user.name ci; git config user.email ci@taxi
+          git add index2.html index3.html index4.html index5.html index-fetch.html
+          git diff --cached --quiet && echo 'нищо за commit' && exit 0
+          git commit -m "docs: банер 'остаряла версия' върху index2..5 и index-fetch [skip ci]"
+          git fetch origin main && git rebase origin/main || true
+          git push
